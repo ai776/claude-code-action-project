@@ -1,0 +1,22 @@
+{
+  "name": "claude-code-action-project",
+  "version": "1.0.0",
+  "description": "Claude Code Action を使用したサンプルプロジェクト",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "github-actions"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  }
+}

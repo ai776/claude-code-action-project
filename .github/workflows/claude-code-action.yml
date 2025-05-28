@@ -1,0 +1,60 @@
+name: Claude Code Action
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    name: Claude Code Review
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # レビューの設定
+          review_level: 'detailed'  # basic, detailed, comprehensive
+          focus_areas: 'security,performance,bugs,style'
+          # コメントの言語設定
+          language: 'ja'
+          # 除外するファイルパターン
+          exclude_patterns: |
+            *.md
+            *.txt
+            package-lock.json
+            yarn.lock
+          # 最大ファイルサイズ (KB)
+          max_file_size: 100
+
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run linter
+        run: npm run lint
