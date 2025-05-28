@@ -54,4 +54,22 @@ describe('Calculator', () => {
       expect(() => calc.divide(10, 0)).toThrow('ゼロで割ることはできません');
     });
   });
+
+  describe('sqrt', () => {
+    test('正の数の平方根', () => {
+      expect(calc.sqrt(16)).toBe(4);
+    });
+
+    test('ゼロの平方根', () => {
+      expect(calc.sqrt(0)).toBe(0);
+    });
+
+    test('小数の平方根', () => {
+      expect(calc.sqrt(2.25)).toBe(1.5);
+    });
+
+    test('負の数の平方根はエラーが発生', () => {
+      expect(() => calc.sqrt(-1)).toThrow('負の数の平方根は計算できません');
+    });
+  });
 });
