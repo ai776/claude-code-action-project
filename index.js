@@ -47,6 +47,19 @@ class Calculator {
     }
     return a / b;
   }
+
+  /**
+   * 数値の平方根を計算します
+   * @param {number} a - 平方根を求める数値
+   * @returns {number} 平方根の結果
+   * @throws {Error} 負の数の場合
+   */
+  sqrt(a) {
+    if (a < 0) {
+      throw new Error('負の数の平方根は計算できません');
+    }
+    return Math.sqrt(a);
+  }
 }
 
 // 使用例
@@ -55,5 +68,6 @@ console.log('足し算: 5 + 3 =', calc.add(5, 3));
 console.log('引き算: 10 - 4 =', calc.subtract(10, 4));
 console.log('掛け算: 6 * 7 =', calc.multiply(6, 7));
 console.log('割り算: 15 / 3 =', calc.divide(15, 3));
+console.log('平方根: √16 =', calc.sqrt(16));
 
 module.exports = Calculator;
