@@ -19,6 +19,10 @@ describe('Calculator', () => {
     test('ゼロとの足し算', () => {
       expect(calc.add(5, 0)).toBe(5);
     });
+
+    test('小数点の足し算', () => {
+      expect(calc.add(0.1, 0.2)).toBeCloseTo(0.3);
+    });
   });
 
   describe('subtract', () => {
