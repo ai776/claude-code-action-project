@@ -7,6 +7,8 @@ on:
     branches: [main, master]
   issue_comment:
     types: [created]
+  issues:
+    types: [opened]
 
 # より明示的な権限設定
 permissions:
@@ -21,7 +23,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Run Tests
-    if: github.event_name != 'issue_comment'
+    if: github.event_name != 'issue_comment' && github.event_name != 'issues'
     # ジョブレベルでも権限を明示
     permissions:
       contents: read
@@ -78,60 +80,62 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install Anthropic SDK
+        run: npm install @anthropic-ai/sdk
+
       - name: Run tests for analysis
         run: npm run test:ci
         env:
           CI: true
 
-      - name: Analyze comment and respond
+      - name: Analyze comment and respond with Claude
         uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Anthropic SDKをインポート
+            const Anthropic = require('@anthropic-ai/sdk');
+
             const comment = context.payload.comment.body;
             const commentUser = context.payload.comment.user.login;
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
 
-            // @claude指示の解析
-            let response = "## 🤖 Claude からの返答\n\n";
-            response += "@" + commentUser + " さん、ご指示ありがとうございます！\n\n";
+            // Claude APIクライアントを初期化
+            const anthropic = new Anthropic({
+              apiKey: process.env.ANTHROPIC_API_KEY,
+            });
 
-            if (comment.includes('レビュー')) {
-              response += "### 📋 コードレビュー結果\n\n";
-              response += "**現在のプロジェクト状況:**\n";
-              response += "- ✅ 全テストが成功しています\n";
-              response += "- ✅ 100% テストカバレッジを達成\n";
-              response += "- ✅ エラーハンドリングが適切に実装されています\n\n";
-              response += "**改善提案:**\n";
-              response += "- 型安全性の向上（TypeScript導入検討）\n";
-              response += "- より詳細なJSDocコメント\n";
-              response += "- パフォーマンステストの追加\n\n";
-            } else if (comment.includes('機能') || comment.includes('追加')) {
-              response += "### 🚀 機能追加の提案\n\n";
-              response += "以下の機能追加を検討できます：\n";
-              response += "- 三角関数（sin, cos, tan）\n";
-              response += "- 対数計算（log, ln）\n";
-              response += "- 累乗計算（power）\n";
-              response += "- 階乗計算（factorial）\n\n";
-            } else {
-              response += "### 💡 一般的な分析\n\n";
-              response += "現在のCalculatorクラスは以下の特徴があります：\n";
-              response += "- シンプルで理解しやすい設計\n";
-              response += "- 適切なエラーハンドリング\n";
-              response += "- 包括的なテストカバレッジ\n";
-              response += "- 拡張しやすいアーキテクチャ\n\n";
-            }
-
-            response += "---\n*この返答は GitHub Actions によって自動生成されました*";
-
-            // より詳細なエラーハンドリング
             try {
-              console.log('🔍 Attempting to post Claude response...');
-              console.log('📝 Issue number:', context.issue.number);
-              console.log('👤 Owner:', context.repo.owner);
-              console.log('📁 Repo:', context.repo.repo);
-              console.log('👤 Comment user:', commentUser);
+              console.log('🤖 Calling Claude API...');
 
-              const result = await github.rest.issues.createComment({
+              // Claudeにリクエストを送信
+              const message = await anthropic.messages.create({
+                model: 'claude-3-opus-20240229',
+                max_tokens: 1000,
+                temperature: 0.7,
+                messages: [{
+                  role: 'user',
+                  content: `あなたは優秀な開発アシスタントです。以下のGitHub Issueに対して適切な応答を日本語で生成してください。
+
+                  Issue タイトル: ${issueTitle}
+                  Issue 内容: ${issueBody}
+                  コメント: ${comment}
+
+                  応答は具体的で実装可能な提案を含めてください。`
+                }]
+              });
+
+              // Claudeからの応答を整形
+              let response = "## 🤖 Claude からの返答\n\n";
+              response += "@" + commentUser + " さん、ご依頼ありがとうございます！\n\n";
+              response += message.content[0].text;
+              response += "\n\n---\n*この返答は Claude API (claude-3-opus) によって生成されました*";
+
+              // GitHubにコメントを投稿
+              await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -139,30 +143,114 @@ jobs:
               });
 
               console.log('✅ Claude response posted successfully');
-              console.log('🔗 Comment URL:', result.data.html_url);
-            } catch (error) {
-              console.log('⚠️ Failed to post Claude response');
-              console.log('❌ Error type:', error.constructor.name);
-              console.log('❌ Error message:', error.message);
-              console.log('❌ Error status:', error.status);
-              console.log('📝 Response content length:', response.length);
 
-              // フォールバック: より短いコメントを試す
-              if (error.message.includes('Resource not accessible')) {
-                console.log('🔄 Trying fallback comment...');
-                try {
-                  const fallbackComment = "## 🤖 Claude からの返答\n\n@" + commentUser + " さん、ご指示を受け付けました！\n\n詳細な分析結果は Actions ログをご確認ください。\n\n🤖 *Automated by Claude Code Action*";
-                  await github.rest.issues.createComment({
-                    issue_number: context.issue.number,
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    body: fallbackComment
-                  });
-                  console.log('✅ Fallback comment posted successfully');
-                } catch (fallbackError) {
-                  console.log('❌ Fallback comment also failed:', fallbackError.message);
-                }
-              }
+            } catch (error) {
+              console.log('⚠️ Error calling Claude API:', error.message);
+
+              // エラー時のフォールバック応答
+              let fallbackResponse = "## 🤖 Claude からの返答\n\n";
+              fallbackResponse += "@" + commentUser + " さん、申し訳ございません。\n\n";
+              fallbackResponse += "現在、Claude APIの呼び出しでエラーが発生しました。\n";
+              fallbackResponse += "しばらく時間をおいて再度お試しください。\n\n";
+              fallbackResponse += "エラー: " + error.message + "\n\n";
+              fallbackResponse += "---\n*GitHub Actions エラーレポート*";
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: fallbackResponse
+              });
+            }
+
+  claude-issue-response:
+    runs-on: ubuntu-latest
+    name: Claude Issue Response
+    if: github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.title, '@claude')
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Anthropic SDK
+        run: npm init -y && npm install @anthropic-ai/sdk
+
+      - name: Respond to new issue with Claude
+        uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const Anthropic = require('@anthropic-ai/sdk');
+
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
+            const issueUser = context.payload.issue.user.login;
+
+            // Claude APIクライアントを初期化
+            const anthropic = new Anthropic({
+              apiKey: process.env.ANTHROPIC_API_KEY,
+            });
+
+            try {
+              console.log('🤖 Calling Claude API for new issue...');
+
+              // Claudeにリクエストを送信
+              const message = await anthropic.messages.create({
+                model: 'claude-3-opus-20240229',
+                max_tokens: 2000,
+                temperature: 0.7,
+                messages: [{
+                  role: 'user',
+                  content: `あなたは優秀な開発アシスタントです。以下のGitHub Issueに対して適切な応答を日本語で生成してください。
+
+                  Issue タイトル: ${issueTitle}
+                  Issue 内容: ${issueBody}
+
+                  もし「サイトをかっこよくしたい」のような要望の場合は、具体的なHTML/CSS/JavaScriptのコード例を含めてください。
+                  応答は具体的で実装可能な提案を含めてください。`
+                }]
+              });
+
+              // Claudeからの応答を整形
+              let response = "## 🤖 Claude からの返答\n\n";
+              response += "@" + issueUser + " さん、ご依頼ありがとうございます！\n\n";
+              response += message.content[0].text;
+              response += "\n\n---\n*この返答は Claude API (claude-3-opus) によって生成されました*";
+
+              // GitHubにコメントを投稿
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: response
+              });
+
+              console.log('✅ Claude response posted successfully to new issue');
+
+            } catch (error) {
+              console.log('⚠️ Error calling Claude API:', error.message);
+
+              // エラー時のフォールバック応答
+              let fallbackResponse = "## 🤖 Claude からの返答\n\n";
+              fallbackResponse += "@" + issueUser + " さん、申し訳ございません。\n\n";
+              fallbackResponse += "現在、Claude APIの呼び出しでエラーが発生しました。\n";
+              fallbackResponse += "APIキーが設定されていない可能性があります。\n\n";
+              fallbackResponse += "エラー: " + error.message + "\n\n";
+              fallbackResponse += "---\n*GitHub Actions エラーレポート*";
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: fallbackResponse
+              });
             }
 
   code-review:
@@ -254,3 +342,5 @@ jobs:
                 }
               }
             }
+
+
