@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お問い合わせフォーム | Claude Code Action</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 30px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="white" opacity="0.1"/><circle cx="80" cy="40" r="1.5" fill="white" opacity="0.15"/><circle cx="40" cy="80" r="1" fill="white" opacity="0.1"/></svg>');
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-container {
+            padding: 50px 40px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #fafbfc;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 140px;
+            font-family: inherit;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .checkbox-input {
+            width: auto;
+            margin: 0;
+            transform: scale(1.3);
+            accent-color: #667eea;
+        }
+
+        .checkbox-label {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .privacy-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .privacy-link:hover {
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .error-message.show {
+            opacity: 1;
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 50px 30px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+
+        .success-message h3 {
+            color: #27ae60;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .success-message p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .submit-btn.loading .loading {
+            display: inline-block;
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .form-container {
+                padding: 30px 25px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-input,
+            .form-select,
+            .form-textarea {
+                padding: 14px 16px;
+            }
+        }
+
+        /* アクセシビリティ改善 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>お問い合わせ</h1>
+            <p>ご質問やご相談がございましたら、お気軽にお問い合わせください。<br>2営業日以内にご返信いたします。</p>
+        </div>
+
+        <div class="form-container">
+            <form id="contactForm" novalidate>
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        お名前<span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        class="form-input"
+                        required
+                        aria-describedby="nameError"
+                        autocomplete="name"
+                    >
+                    <div class="error-message" id="nameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        メールアドレス<span class="required">*</span>
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-input"
+                        required
+                        aria-describedby="emailError"
+                        autocomplete="email"
+                    >
+                    <div class="error-message" id="emailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        電話番号
+                    </label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        class="form-input"
+                        autocomplete="tel"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="subject" class="form-label">
+                        件名<span class="required">*</span>
+                    </label>
+                    <select
+                        id="subject"
+                        name="subject"
+                        class="form-select"
+                        required
+                        aria-describedby="subjectError"
+                    >
+                        <option value="">選択してください</option>
+                        <option value="general">一般的なお問い合わせ</option>
+                        <option value="support">サポート・技術的な質問</option>
+                        <option value="business">ビジネス・提携について</option>
+                        <option value="bug">バグ報告</option>
+                        <option value="feature">機能要望</option>
+                        <option value="other">その他</option>
+                    </select>
+                    <div class="error-message" id="subjectError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="message" class="form-label">
+                        お問い合わせ内容<span class="required">*</span>
+                    </label>
+                    <textarea
+                        id="message"
+                        name="message"
+                        class="form-textarea"
+                        rows="6"
+                        required
+                        aria-describedby="messageError"
+                        placeholder="詳細をお聞かせください..."
+                    ></textarea>
+                    <div class="error-message" id="messageError"></div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input
+                        type="checkbox"
+                        id="privacy"
+                        name="privacy"
+                        class="checkbox-input"
+                        required
+                        aria-describedby="privacyError"
+                    >
+                    <label for="privacy" class="checkbox-label">
+                        <a href="#" class="privacy-link">プライバシーポリシー</a>に同意します<span class="required">*</span>
+                    </label>
+                </div>
+                <div class="error-message" id="privacyError"></div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <div class="loading"></div>
+                    <span class="btn-text">送信する</span>
+                </button>
+            </form>
+
+            <div class="success-message" id="successMessage">
+                <div class="success-icon">✓</div>
+                <h3>送信完了</h3>
+                <p>
+                    お問い合わせありがとうございました。<br>
+                    内容を確認次第、2営業日以内にご返信いたします。<br>
+                    しばらくお待ちください。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ContactForm {
+            constructor() {
+                this.form = document.getElementById('contactForm');
+                this.submitBtn = document.getElementById('submitBtn');
+                this.successMessage = document.getElementById('successMessage');
+                this.formContainer = document.querySelector('.form-container');
+
+                this.init();
+            }
+
+            init() {
+                this.form.addEventListener('submit', this.handleSubmit.bind(this));
+
+                // リアルタイムバリデーション
+                const inputs = this.form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('blur', () => this.validateField(input));
+                    input.addEventListener('input', () => this.clearError(input));
+                });
+            }
+
+            handleSubmit(e) {
+                e.preventDefault();
+
+                if (this.validateForm()) {
+                    this.submitForm();
+                }
+            }
+
+            validateForm() {
+                let isValid = true;
+
+                // 名前のバリデーション
+                const name = document.getElementById('name');
+                if (!name.value.trim()) {
+                    this.showError('nameError', 'お名前を入力してください');
+                    isValid = false;
+                } else if (name.value.trim().length < 2) {
+                    this.showError('nameError', 'お名前は2文字以上で入力してください');
+                    isValid = false;
+                }
+
+                // メールのバリデーション
+                const email = document.getElementById('email');
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!email.value.trim()) {
+                    this.showError('emailError', 'メールアドレスを入力してください');
+                    isValid = false;
+                } else if (!emailPattern.test(email.value)) {
+                    this.showError('emailError', '正しいメールアドレスを入力してください');
+                    isValid = false;
+                }
+
+                // 件名のバリデーション
+                const subject = document.getElementById('subject');
+                if (!subject.value) {
+                    this.showError('subjectError', '件名を選択してください');
+                    isValid = false;
+                }
+
+                // メッセージのバリデーション
+                const message = document.getElementById('message');
+                if (!message.value.trim()) {
+                    this.showError('messageError', 'お問い合わせ内容を入力してください');
+                    isValid = false;
+                } else if (message.value.trim().length < 10) {
+                    this.showError('messageError', 'お問い合わせ内容は10文字以上で入力してください');
+                    isValid = false;
+                }
+
+                // プライバシーポリシーのバリデーション
+                const privacy = document.getElementById('privacy');
+                if (!privacy.checked) {
+                    this.showError('privacyError', 'プライバシーポリシーに同意してください');
+                    isValid = false;
+                }
+
+                return isValid;
+            }
+
+            validateField(field) {
+                this.clearError(field);
+
+                switch(field.id) {
+                    case 'name':
+                        if (field.value.trim() && field.value.trim().length < 2) {
+                            this.showError('nameError', 'お名前は2文字以上で入力してください');
+                        }
+                        break;
+                    case 'email':
+                        if (field.value.trim()) {
+                            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailPattern.test(field.value)) {
+                                this.showError('emailError', '正しいメールアドレスを入力してください');
+                            }
+                        }
+                        break;
+                    case 'message':
+                        if (field.value.trim() && field.value.trim().length < 10) {
+                            this.showError('messageError', 'お問い合わせ内容は10文字以上で入力してください');
+                        }
+                        break;
+                }
+            }
+
+            showError(errorId, message) {
+                const errorElement = document.getElementById(errorId);
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+            }
+
+            clearError(field) {
+                const errorId = field.getAttribute('aria-describedby');
+                if (errorId) {
+                    const errorElement = document.getElementById(errorId);
+                    errorElement.textContent = '';
+                    errorElement.classList.remove('show');
+                }
+            }
+
+            async submitForm() {
+                // ローディング状態に変更
+                this.submitBtn.classList.add('loading');
+                this.submitBtn.disabled = true;
+
+                try {
+                    // フォームデータを収集
+                    const formData = new FormData(this.form);
+                    const data = Object.fromEntries(formData);
+
+                    // 送信シミュレーション（実際のAPIエンドポイントに置き換えてください）
+                    await this.simulateSubmission(data);
+
+                    // 成功時の処理
+                    this.showSuccess();
+
+                } catch (error) {
+                    // エラー時の処理
+                    alert('送信中にエラーが発生しました。しばらく時間をおいて再度お試しください。');
+                    console.error('Submit error:', error);
+                } finally {
+                    // ローディング状態を解除
+                    this.submitBtn.classList.remove('loading');
+                    this.submitBtn.disabled = false;
+                }
+            }
+
+            async simulateSubmission(data) {
+                // 実際の送信処理のシミュレーション
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        console.log('送信データ:', data);
+                        resolve();
+                    }, 2000);
+                });
+            }
+
+            showSuccess() {
+                // フォームを非表示にして成功メッセージを表示
+                this.form.style.display = 'none';
+                this.successMessage.style.display = 'block';
+
+                // フォームをリセット
+                this.form.reset();
+
+                // エラーメッセージをクリア
+                const errorMessages = this.form.querySelectorAll('.error-message');
+                errorMessages.forEach(error => {
+                    error.textContent = '';
+                    error.classList.remove('show');
+                });
+            }
+        }
+
+        // フォームを初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            new ContactForm();
+        });
+
+        // スムーズスクロール（アンカーリンク用）
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
