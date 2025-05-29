@@ -7,18 +7,27 @@ on:
   issue_comment:
     types: [created]
 
-# 明示的な権限設定を追加
+# より明示的な権限設定
 permissions:
   contents: read
   issues: write
   pull-requests: write
   actions: read
+  checks: write
+  statuses: write
 
 jobs:
   test:
     if: github.event_name != 'issue_comment' || contains(github.event.comment.body, '@playwright')
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
+      checks: write
     steps:
     - uses: actions/checkout@v4
 
@@ -103,22 +112,55 @@ jobs:
           comment += "---\n";
           comment += "🤖 *Automated by Claude Code Action - Playwright*";
 
+          // より詳細なエラーハンドリング
           try {
-            await github.rest.issues.createComment({
+            console.log('🔍 Attempting to post comment...');
+            console.log('📝 Issue number:', context.issue.number);
+            console.log('👤 Owner:', context.repo.owner);
+            console.log('📁 Repo:', context.repo.repo);
+
+            const result = await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
+
             console.log('✅ Playwright test results posted successfully');
+            console.log('🔗 Comment URL:', result.data.html_url);
           } catch (error) {
-            console.log('⚠️ Failed to post Playwright test results:', error.message);
-            console.log('📝 Comment content:', comment);
+            console.log('⚠️ Failed to post Playwright test results');
+            console.log('❌ Error type:', error.constructor.name);
+            console.log('❌ Error message:', error.message);
+            console.log('❌ Error status:', error.status);
+            console.log('📝 Comment content length:', comment.length);
+
+            // フォールバック: より短いコメントを試す
+            if (error.message.includes('Resource not accessible')) {
+              console.log('🔄 Trying fallback comment...');
+              try {
+                const fallbackComment = "## 🎭 Playwright Tests Completed\n\nTests have finished running. Check the Actions tab for detailed results.\n\n🤖 *Automated by Claude Code Action*";
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: fallbackComment
+                });
+                console.log('✅ Fallback comment posted successfully');
+              } catch (fallbackError) {
+                console.log('❌ Fallback comment also failed:', fallbackError.message);
+              }
+            }
           }
 
   claude-playwright-assistant:
     if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@playwright')
     runs-on: ubuntu-latest
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
     - uses: actions/checkout@v4
 
@@ -193,14 +235,24 @@ jobs:
           response += "---\n🤖 *Claude Playwright Assistant - Powered by AI*";
 
           try {
-            await github.rest.issues.createComment({
+            console.log('🔍 Attempting to post Playwright assistant response...');
+            console.log('📝 Issue number:', issueNumber);
+            console.log('👤 Owner:', context.repo.owner);
+            console.log('📁 Repo:', context.repo.repo);
+
+            const result = await github.rest.issues.createComment({
               issue_number: issueNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: response
             });
+
             console.log('✅ Playwright assistant response posted successfully');
+            console.log('🔗 Comment URL:', result.data.html_url);
           } catch (error) {
-            console.log('⚠️ Failed to post Playwright assistant response:', error.message);
-            console.log('📝 Response content:', response);
+            console.log('⚠️ Failed to post Playwright assistant response');
+            console.log('❌ Error type:', error.constructor.name);
+            console.log('❌ Error message:', error.message);
+            console.log('❌ Error status:', error.status);
+            console.log('📝 Response content length:', response.length);
           }

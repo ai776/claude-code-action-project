@@ -8,17 +8,24 @@ on:
   issue_comment:
     types: [created]
 
-# 明示的な権限設定を追加
+# より明示的な権限設定
 permissions:
   contents: read
   issues: write
   pull-requests: write
+  actions: read
+  checks: write
+  statuses: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
     name: Run Tests
     if: github.event_name != 'issue_comment'
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -39,6 +46,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Claude Response
     if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -95,17 +107,46 @@ jobs:
 
             response += "---\n*この返答は GitHub Actions によって自動生成されました*";
 
+            // より詳細なエラーハンドリング
             try {
-              await github.rest.issues.createComment({
+              console.log('🔍 Attempting to post Claude response...');
+              console.log('📝 Issue number:', context.issue.number);
+              console.log('👤 Owner:', context.repo.owner);
+              console.log('📁 Repo:', context.repo.repo);
+              console.log('👤 Comment user:', commentUser);
+
+              const result = await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: response
               });
+
               console.log('✅ Claude response posted successfully');
+              console.log('🔗 Comment URL:', result.data.html_url);
             } catch (error) {
-              console.log('⚠️ Failed to post Claude response:', error.message);
-              console.log('📝 Response content:', response);
+              console.log('⚠️ Failed to post Claude response');
+              console.log('❌ Error type:', error.constructor.name);
+              console.log('❌ Error message:', error.message);
+              console.log('❌ Error status:', error.status);
+              console.log('📝 Response content length:', response.length);
+
+              // フォールバック: より短いコメントを試す
+              if (error.message.includes('Resource not accessible')) {
+                console.log('🔄 Trying fallback comment...');
+                try {
+                  const fallbackComment = "## 🤖 Claude からの返答\n\n@" + commentUser + " さん、ご指示を受け付けました！\n\n詳細な分析結果は Actions ログをご確認ください。\n\n🤖 *Automated by Claude Code Action*";
+                  await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: fallbackComment
+                  });
+                  console.log('✅ Fallback comment posted successfully');
+                } catch (fallbackError) {
+                  console.log('❌ Fallback comment also failed:', fallbackError.message);
+                }
+              }
             }
 
   code-review:
@@ -113,6 +154,11 @@ jobs:
     name: Automated Review
     if: github.event_name == 'pull_request'
     needs: test
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -151,15 +197,44 @@ jobs:
               "---\n" +
               "*このレビューは GitHub Actions によって自動生成されました*";
 
+            // より詳細なエラーハンドリング
             try {
-              await github.rest.issues.createComment({
+              console.log('🔍 Attempting to post code review...');
+              console.log('📝 Issue number:', context.issue.number);
+              console.log('👤 Owner:', context.repo.owner);
+              console.log('📁 Repo:', context.repo.repo);
+              console.log('📁 Changed files:', changedFiles.length);
+
+              const result = await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: reviewComment
               });
+
               console.log('✅ Code review comment posted successfully');
+              console.log('🔗 Comment URL:', result.data.html_url);
             } catch (error) {
-              console.log('⚠️ Failed to post code review comment:', error.message);
-              console.log('📝 Review content:', reviewComment);
+              console.log('⚠️ Failed to post code review comment');
+              console.log('❌ Error type:', error.constructor.name);
+              console.log('❌ Error message:', error.message);
+              console.log('❌ Error status:', error.status);
+              console.log('📝 Review content length:', reviewComment.length);
+
+              // フォールバック: より短いコメントを試す
+              if (error.message.includes('Resource not accessible')) {
+                console.log('🔄 Trying fallback review comment...');
+                try {
+                  const fallbackComment = "## 🤖 自動コードレビュー\n\n✅ すべてのテストが成功しました！\n\n詳細な分析結果は Actions ログをご確認ください。\n\n🤖 *Automated by Claude Code Action*";
+                  await github.rest.issues.createComment({
+                    issue_number: context.issue.number,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: fallbackComment
+                  });
+                  console.log('✅ Fallback review comment posted successfully');
+                } catch (fallbackError) {
+                  console.log('❌ Fallback review comment also failed:', fallbackError.message);
+                }
+              }
             }
