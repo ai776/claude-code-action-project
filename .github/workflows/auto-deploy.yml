@@ -1,0 +1,226 @@
+name: Auto Code Generation and Deploy
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  auto-generate-and-deploy:
+    runs-on: ubuntu-latest
+    name: Auto Generate Code and Deploy
+    if: contains(github.event.issue.title, '@claude') && contains(github.event.issue.labels.*.name, 'auto-deploy')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @anthropic-ai/sdk
+
+      - name: Generate code with Claude
+        id: generate-code
+        uses: actions/github-script@v7
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const Anthropic = require('@anthropic-ai/sdk');
+
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
+            const issueNumber = context.payload.issue.number;
+
+            // Claude APIクライアントを初期化
+            const anthropic = new Anthropic({
+              apiKey: process.env.ANTHROPIC_API_KEY,
+            });
+
+            try {
+              console.log('🤖 Calling Claude API for code generation...');
+
+              // Claudeにコード生成を依頼
+              const message = await anthropic.messages.create({
+                model: 'claude-3-5-sonnet-20241022', // 最新のClaude使用
+                max_tokens: 4000,
+                temperature: 0.3,
+                messages: [{
+                  role: 'user',
+                  content: `あなたは優秀な開発者です。以下の依頼に基づいて実装可能なコードを生成してください。
+
+                  依頼タイトル: ${issueTitle}
+                  詳細: ${issueBody}
+
+                  以下の形式で返答してください：
+
+                  ## ファイル構成
+                  [作成・修正するファイルのリスト]
+
+                  ## [ファイル名1]
+                  \`\`\`[言語]
+                  [コード内容]
+                  \`\`\`
+
+                  ## [ファイル名2]
+                  \`\`\`[言語]
+                  [コード内容]
+                  \`\`\`
+
+                  実用的で動作するコードを生成してください。`
+                }]
+              });
+
+              const generatedContent = message.content[0].text;
+              console.log('✅ Code generated successfully');
+
+              // 生成されたコードをJSON形式で出力
+              core.setOutput('generated_code', generatedContent);
+              core.setOutput('issue_number', issueNumber);
+
+              return generatedContent;
+
+            } catch (error) {
+              console.log('⚠️ Error calling Claude API:', error.message);
+              throw error;
+            }
+
+      - name: Create new branch
+        run: |
+          BRANCH_NAME="auto-deploy-issue-${{ steps.generate-code.outputs.issue_number }}"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Parse and create files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const generatedCode = `${{ steps.generate-code.outputs.generated_code }}`;
+
+            // Claudeの応答からファイルとコードを抽出
+            const fileRegex = /## ([^\n]+)\n```(\w+)\n([\s\S]*?)```/g;
+            let match;
+
+            while ((match = fileRegex.exec(generatedCode)) !== null) {
+              const fileName = match[1].trim();
+              const language = match[2];
+              const code = match[3];
+
+              console.log(`Creating file: ${fileName}`);
+
+              // ディレクトリが存在しない場合は作成
+              const dir = fileName.includes('/') ? fileName.substring(0, fileName.lastIndexOf('/')) : '';
+              if (dir) {
+                fs.mkdirSync(dir, { recursive: true });
+              }
+
+              // ファイルを作成
+              fs.writeFileSync(fileName, code);
+            }
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "🤖 Auto-generated code for issue #${{ steps.generate-code.outputs.issue_number }}"
+          git push origin ${{ env.BRANCH_NAME }}
+
+      - name: Create Pull Request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
+            const branchName = process.env.BRANCH_NAME;
+
+            const { data: pullRequest } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Auto-generated code for issue #${issueNumber}`,
+              head: branchName,
+              base: 'master',
+              body: `
+              ## 🤖 自動生成されたコード
+
+              このプルリクエストは Issue #${issueNumber} に基づいて Claude API によって自動生成されました。
+
+              ### 📋 変更内容
+              - Claude API を使用してコードを自動生成
+              - 実装可能な形式でファイルを作成
+
+              ### 🔍 レビューポイント
+              - [ ] 生成されたコードが要件を満たしているか
+              - [ ] セキュリティ上の問題がないか
+              - [ ] テストが通るか
+
+              Closes #${issueNumber}
+              `
+            });
+
+            console.log(`✅ Pull Request created: ${pullRequest.html_url}`);
+
+      - name: Auto-merge if tests pass (optional)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // 自動マージは危険なので、コメントで手動マージを促す
+            const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
+
+            await github.rest.issues.createComment({
+              issue_number: issueNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🎉 コード生成完了！
+
+              プルリクエストが作成されました。レビュー後、手動でマージしてください。
+
+              **次のステップ:**
+              1. プルリクエストをレビュー
+              2. テストが通ることを確認
+              3. マージしてデプロイ
+
+              ---
+              *Claude API によって自動生成*`
+            });
+
+  deploy-to-server:
+    runs-on: ubuntu-latest
+    name: Deploy to Server
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build || echo "No build script found"
+
+      - name: Deploy to server (example)
+        run: |
+          echo "🚀 Deploying to server..."
+          # ここに実際のデプロイコマンドを追加
+          # rsync -avz ./ user@server:/path/to/deploy/
+          # or use FTP, SSH, etc.
+          echo "✅ Deploy completed"

@@ -113,7 +113,7 @@ jobs:
 
               // Claudeにリクエストを送信
               const message = await anthropic.messages.create({
-                model: 'claude-3-opus-20240229',
+                model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 1000,
                 temperature: 0.7,
                 messages: [{
@@ -132,7 +132,7 @@ jobs:
               let response = "## 🤖 Claude からの返答\n\n";
               response += "@" + commentUser + " さん、ご依頼ありがとうございます！\n\n";
               response += message.content[0].text;
-              response += "\n\n---\n*この返答は Claude API (claude-3-opus) によって生成されました*";
+              response += "\n\n---\n*この返答は Claude API (claude-3-5-sonnet) によって生成されました*";
 
               // GitHubにコメントを投稿
               await github.rest.issues.createComment({
@@ -203,7 +203,7 @@ jobs:
 
               // Claudeにリクエストを送信
               const message = await anthropic.messages.create({
-                model: 'claude-3-opus-20240229',
+                model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 2000,
                 temperature: 0.7,
                 messages: [{
@@ -222,7 +222,7 @@ jobs:
               let response = "## 🤖 Claude からの返答\n\n";
               response += "@" + issueUser + " さん、ご依頼ありがとうございます！\n\n";
               response += message.content[0].text;
-              response += "\n\n---\n*この返答は Claude API (claude-3-opus) によって生成されました*";
+              response += "\n\n---\n*この返答は Claude API (claude-3-5-sonnet) によって生成されました*";
 
               // GitHubにコメントを投稿
               await github.rest.issues.createComment({
