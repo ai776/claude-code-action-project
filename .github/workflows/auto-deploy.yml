@@ -189,8 +189,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
+            const issueNumber = context.payload.issue.number;  // 直接取得
             const branchName = process.env.BRANCH_NAME;
+
+            console.log('📋 Debug info:');
+            console.log('Issue Number:', issueNumber);
+            console.log('Branch Name:', branchName);
+            console.log('Repo Owner:', context.repo.owner);
+            console.log('Repo Name:', context.repo.repo);
 
             try {
               // プルリクエスト作成
@@ -218,11 +224,13 @@ jobs:
               });
 
               console.log(`✅ Pull Request #${pr.number} created`);
+              console.log(`📎 PR URL: ${pr.html_url}`);
 
               // 少し待ってからマージ
               await new Promise(resolve => setTimeout(resolve, 2000));
 
               // 自動マージ実行
+              console.log('🔀 Attempting to merge PR...');
               await github.rest.pulls.merge({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
