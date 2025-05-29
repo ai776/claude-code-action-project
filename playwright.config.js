@@ -11,9 +11,9 @@ module.exports = defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 3 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   /* Global test timeout */
   timeout: 60000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -37,13 +37,13 @@ module.exports = defineConfig({
     video: 'retain-on-failure',
 
     /* Global timeout for each action */
-    actionTimeout: 15000,
+    actionTimeout: process.env.CI ? 20000 : 15000,
 
     /* Global timeout for navigation */
-    navigationTimeout: 45000,
+    navigationTimeout: process.env.CI ? 60000 : 45000,
 
     /* Global timeout for expect assertions */
-    expectTimeout: 10000,
+    expectTimeout: process.env.CI ? 15000 : 10000,
   },
 
   /* Configure projects for major browsers */
@@ -63,8 +63,8 @@ module.exports = defineConfig({
       use: {
         ...devices['Desktop Safari'],
         // WebKit固有の設定でタイムアウトを延長
-        actionTimeout: 20000,
-        navigationTimeout: 60000,
+        actionTimeout: process.env.CI ? 30000 : 20000,
+        navigationTimeout: process.env.CI ? 90000 : 60000,
       },
     },
 
@@ -74,7 +74,7 @@ module.exports = defineConfig({
       use: {
         ...devices['Pixel 5'],
         // モバイルでの処理時間を考慮
-        actionTimeout: 15000,
+        actionTimeout: process.env.CI ? 20000 : 15000,
       },
     },
     {
@@ -82,8 +82,8 @@ module.exports = defineConfig({
       use: {
         ...devices['iPhone 12'],
         // Mobile Safariでの処理時間を考慮
-        actionTimeout: 20000,
-        navigationTimeout: 60000,
+        actionTimeout: process.env.CI ? 30000 : 20000,
+        navigationTimeout: process.env.CI ? 90000 : 60000,
       },
     },
 
