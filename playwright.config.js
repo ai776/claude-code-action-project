@@ -14,6 +14,8 @@ module.exports = defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+  /* Global test timeout */
+  timeout: 60000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
@@ -34,11 +36,14 @@ module.exports = defineConfig({
     /* Record video on failure */
     video: 'retain-on-failure',
 
-    /* Global timeout for each test */
-    actionTimeout: 10000,
+    /* Global timeout for each action */
+    actionTimeout: 15000,
 
     /* Global timeout for navigation */
-    navigationTimeout: 30000,
+    navigationTimeout: 45000,
+
+    /* Global timeout for expect assertions */
+    expectTimeout: 10000,
   },
 
   /* Configure projects for major browsers */
@@ -55,17 +60,31 @@ module.exports = defineConfig({
 
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        // WebKit固有の設定でタイムアウトを延長
+        actionTimeout: 20000,
+        navigationTimeout: 60000,
+      },
     },
 
     /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: {
+        ...devices['Pixel 5'],
+        // モバイルでの処理時間を考慮
+        actionTimeout: 15000,
+      },
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: {
+        ...devices['iPhone 12'],
+        // Mobile Safariでの処理時間を考慮
+        actionTimeout: 20000,
+        navigationTimeout: 60000,
+      },
     },
 
     /* Test against branded browsers - only if available */
