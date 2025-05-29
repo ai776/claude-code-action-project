@@ -7,11 +7,27 @@ on:
   issue_comment:
     types: [created]
 
+# より明示的な権限設定
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+  checks: write
+  statuses: write
+
 jobs:
   test:
     if: github.event_name != 'issue_comment' || contains(github.event.comment.body, '@playwright')
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
+      checks: write
     steps:
     - uses: actions/checkout@v4
 
@@ -41,6 +57,7 @@ jobs:
       if: github.event_name == 'pull_request' && !cancelled()
       uses: actions/github-script@v7
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const fs = require('fs');
           const path = require('path');
@@ -54,20 +71,20 @@ jobs:
               const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
               const { stats } = results;
 
-              comment += `### 📊 Test Summary\n`;
-              comment += `- **Total Tests**: ${stats.total}\n`;
-              comment += `- **✅ Passed**: ${stats.passed}\n`;
-              comment += `- **❌ Failed**: ${stats.failed}\n`;
-              comment += `- **⏭️ Skipped**: ${stats.skipped}\n`;
-              comment += `- **⏱️ Duration**: ${Math.round(stats.duration / 1000)}s\n\n`;
+              comment += "### 📊 Test Summary\n";
+              comment += "- **Total Tests**: " + stats.total + "\n";
+              comment += "- **✅ Passed**: " + stats.passed + "\n";
+              comment += "- **❌ Failed**: " + stats.failed + "\n";
+              comment += "- **⏭️ Skipped**: " + stats.skipped + "\n";
+              comment += "- **⏱️ Duration**: " + Math.round(stats.duration / 1000) + "s\n\n";
 
               if (stats.failed > 0) {
-                comment += `### ❌ Failed Tests\n`;
+                comment += "### ❌ Failed Tests\n";
                 results.suites.forEach(suite => {
                   suite.specs.forEach(spec => {
                     spec.tests.forEach(test => {
                       if (test.results.some(r => r.status === 'failed')) {
-                        comment += `- **${spec.title}**: ${test.title}\n`;
+                        comment += "- **" + spec.title + "**: " + test.title + "\n";
                       }
                     });
                   });
@@ -75,36 +92,75 @@ jobs:
                 comment += '\n';
               }
 
-              comment += `### 🎯 Browser Coverage\n`;
-              comment += `Tests ran on: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari\n\n`;
+              comment += "### 🎯 Browser Coverage\n";
+              comment += "Tests ran on: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari\n\n";
 
               if (stats.passed === stats.total - stats.skipped) {
-                comment += `### 🎉 All tests passed!\n`;
-                comment += `Your code is ready for production! 🚀\n\n`;
+                comment += "### 🎉 All tests passed!\n";
+                comment += "Your code is ready for production! 🚀\n\n";
               }
 
             } else {
               comment += '⚠️ Test results not found\n\n';
             }
           } catch (error) {
-            comment += `⚠️ Error reading test results: ${error.message}\n\n`;
+            comment += "⚠️ Error reading test results: " + error.message + "\n\n";
           }
 
-          comment += `### 📋 Playwright Report\n`;
-          comment += `View the detailed HTML report in the [Actions artifacts](${context.payload.pull_request.html_url}/checks).\n\n`;
-          comment += `---\n`;
-          comment += `🤖 *Automated by Claude Code Action - Playwright*`;
+          comment += "### 📋 Playwright Report\n";
+          comment += "View the detailed HTML report in the [Actions artifacts](" + context.payload.pull_request.html_url + "/checks).\n\n";
+          comment += "---\n";
+          comment += "🤖 *Automated by Claude Code Action - Playwright*";
 
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          // より詳細なエラーハンドリング
+          try {
+            console.log('🔍 Attempting to post comment...');
+            console.log('📝 Issue number:', context.issue.number);
+            console.log('👤 Owner:', context.repo.owner);
+            console.log('📁 Repo:', context.repo.repo);
+
+            const result = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+            console.log('✅ Playwright test results posted successfully');
+            console.log('🔗 Comment URL:', result.data.html_url);
+          } catch (error) {
+            console.log('⚠️ Failed to post Playwright test results');
+            console.log('❌ Error type:', error.constructor.name);
+            console.log('❌ Error message:', error.message);
+            console.log('❌ Error status:', error.status);
+            console.log('📝 Comment content length:', comment.length);
+
+            // フォールバック: より短いコメントを試す
+            if (error.message.includes('Resource not accessible')) {
+              console.log('🔄 Trying fallback comment...');
+              try {
+                const fallbackComment = "## 🎭 Playwright Tests Completed\n\nTests have finished running. Check the Actions tab for detailed results.\n\n🤖 *Automated by Claude Code Action*";
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: fallbackComment
+                });
+                console.log('✅ Fallback comment posted successfully');
+              } catch (fallbackError) {
+                console.log('❌ Fallback comment also failed:', fallbackError.message);
+              }
+            }
+          }
 
   claude-playwright-assistant:
     if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@playwright')
     runs-on: ubuntu-latest
+    # ジョブレベルでも権限を明示
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
     - uses: actions/checkout@v4
 
@@ -120,6 +176,7 @@ jobs:
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const comment = context.payload.comment.body;
           const issueNumber = context.issue.number;
@@ -127,59 +184,75 @@ jobs:
           let response = '## 🎭 Claude Playwright Assistant\n\n';
 
           if (comment.includes('@playwright help')) {
-            response += `### 🚀 Available Commands\n\n`;
-            response += `- \`@playwright help\` - Show this help message\n`;
-            response += `- \`@playwright test\` - Run all Playwright tests\n`;
-            response += `- \`@playwright generate <url>\` - Generate tests for a URL\n`;
-            response += `- \`@playwright debug\` - Run tests in debug mode\n`;
-            response += `- \`@playwright report\` - Show latest test report\n\n`;
-            response += `### 📚 Playwright Resources\n`;
-            response += `- [Playwright Documentation](https://playwright.dev/docs/intro)\n`;
-            response += `- [Best Practices](https://playwright.dev/docs/best-practices)\n`;
-            response += `- [API Reference](https://playwright.dev/docs/api/class-playwright)\n\n`;
+            response += "### 🚀 Available Commands\n\n";
+            response += "- '@playwright help' - Show this help message\n";
+            response += "- '@playwright test' - Run all Playwright tests\n";
+            response += "- '@playwright generate <url>' - Generate tests for a URL\n";
+            response += "- '@playwright debug' - Run tests in debug mode\n";
+            response += "- '@playwright report' - Show latest test report\n\n";
+            response += "### 📚 Playwright Resources\n";
+            response += "- [Playwright Documentation](https://playwright.dev/docs/intro)\n";
+            response += "- [Best Practices](https://playwright.dev/docs/best-practices)\n";
+            response += "- [API Reference](https://playwright.dev/docs/api/class-playwright)\n\n";
           } else if (comment.includes('@playwright test')) {
-            response += `### 🧪 Running Playwright Tests\n\n`;
-            response += `Tests are being executed across all browsers:\n`;
-            response += `- 🌐 **Chromium** (Desktop Chrome)\n`;
-            response += `- 🦊 **Firefox** (Desktop Firefox)\n`;
-            response += `- 🧭 **WebKit** (Desktop Safari)\n`;
-            response += `- 📱 **Mobile Chrome** (Pixel 5)\n`;
-            response += `- 📱 **Mobile Safari** (iPhone 12)\n\n`;
-            response += `Check the Actions tab for detailed results! 🎯\n\n`;
+            response += "### 🧪 Running Playwright Tests\n\n";
+            response += "Tests are being executed across all browsers:\n";
+            response += "- 🌐 **Chromium** (Desktop Chrome)\n";
+            response += "- 🦊 **Firefox** (Desktop Firefox)\n";
+            response += "- 🧭 **WebKit** (Desktop Safari)\n";
+            response += "- 📱 **Mobile Chrome** (Pixel 5)\n";
+            response += "- 📱 **Mobile Safari** (iPhone 12)\n\n";
+            response += "Check the Actions tab for detailed results! 🎯\n\n";
           } else if (comment.includes('@playwright generate')) {
             const urlMatch = comment.match(/generate\s+(https?:\/\/[^\s]+)/);
             const url = urlMatch ? urlMatch[1] : 'https://example.com';
 
-            response += `### 🔧 Test Generation for: ${url}\n\n`;
-            response += `Here's a sample test structure:\n\n`;
-            response += `\`\`\`javascript\n`;
-            response += `const { test, expect } = require('@playwright/test');\n\n`;
-            response += `test.describe('${url} Tests', () => {\n`;
-            response += `  test('page loads correctly', async ({ page }) => {\n`;
-            response += `    await page.goto('${url}');\n`;
-            response += `    await expect(page).toHaveTitle(/.+/);\n`;
-            response += `  });\n\n`;
-            response += `  test('main navigation works', async ({ page }) => {\n`;
-            response += `    await page.goto('${url}');\n`;
-            response += `    // Add your specific test logic here\n`;
-            response += `  });\n`;
-            response += `});\n`;
-            response += `\`\`\`\n\n`;
+            response += "### 🔧 Test Generation for: " + url + "\n\n";
+            response += "Here's a sample test structure:\n\n";
+            response += "```javascript\n";
+            response += "const { test, expect } = require('@playwright/test');\n\n";
+            response += "test.describe('" + url + " Tests', () => {\n";
+            response += "  test('page loads correctly', async ({ page }) => {\n";
+            response += "    await page.goto('" + url + "');\n";
+            response += "    await expect(page).toHaveTitle(/.+/);\n";
+            response += "  });\n\n";
+            response += "  test('main navigation works', async ({ page }) => {\n";
+            response += "    await page.goto('" + url + "');\n";
+            response += "    // Add your specific test logic here\n";
+            response += "  });\n";
+            response += "});\n";
+            response += "```\n\n";
           } else {
-            response += `### 💡 Playwright Analysis\n\n`;
-            response += `I can help you with:\n`;
-            response += `- 🧪 **Test Creation**: Generate comprehensive test suites\n`;
-            response += `- 🐛 **Debugging**: Analyze test failures and suggest fixes\n`;
-            response += `- 🎯 **Optimization**: Improve test performance and reliability\n`;
-            response += `- 📊 **Reporting**: Interpret test results and coverage\n\n`;
-            response += `Use \`@playwright help\` for available commands!\n\n`;
+            response += "### 💡 Playwright Analysis\n\n";
+            response += "I can help you with:\n";
+            response += "- 🧪 **Test Creation**: Generate comprehensive test suites\n";
+            response += "- 🐛 **Debugging**: Analyze test failures and suggest fixes\n";
+            response += "- 🎯 **Optimization**: Improve test performance and reliability\n";
+            response += "- 📊 **Reporting**: Interpret test results and coverage\n\n";
+            response += "Use '@playwright help' for available commands!\n\n";
           }
 
-          response += `---\n🤖 *Claude Playwright Assistant - Powered by AI*`;
+          response += "---\n🤖 *Claude Playwright Assistant - Powered by AI*";
 
-          github.rest.issues.createComment({
-            issue_number: issueNumber,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: response
-          });
+          try {
+            console.log('🔍 Attempting to post Playwright assistant response...');
+            console.log('📝 Issue number:', issueNumber);
+            console.log('👤 Owner:', context.repo.owner);
+            console.log('📁 Repo:', context.repo.repo);
+
+            const result = await github.rest.issues.createComment({
+              issue_number: issueNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+
+            console.log('✅ Playwright assistant response posted successfully');
+            console.log('🔗 Comment URL:', result.data.html_url);
+          } catch (error) {
+            console.log('⚠️ Failed to post Playwright assistant response');
+            console.log('❌ Error type:', error.constructor.name);
+            console.log('❌ Error message:', error.message);
+            console.log('❌ Error status:', error.status);
+            console.log('📝 Response content length:', response.length);
+          }
