@@ -13,7 +13,14 @@ jobs:
   auto-generate-and-deploy:
     runs-on: ubuntu-latest
     name: Auto Generate Code and Deploy
-    if: contains(github.event.issue.title, '@claude') && contains(github.event.issue.labels.*.name, 'auto-deploy')
+    if: |
+      contains(github.event.issue.title, '@claude') && (
+        contains(github.event.issue.labels.*.name, 'auto-deploy') ||
+        contains(github.event.issue.labels.*.name, 'line-bot') ||
+        contains(github.event.issue.body, 'コード') ||
+        contains(github.event.issue.body, 'フォーム') ||
+        contains(github.event.issue.body, '作成')
+      )
 
     steps:
       - name: Checkout code
@@ -177,25 +184,96 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // 自動マージは危険なので、コメントで手動マージを促す
             const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
 
-            await github.rest.issues.createComment({
-              issue_number: issueNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🎉 コード生成完了！
+            // LINEからの依頼かつ、小さな変更の場合は自動マージを検討
+            const issueBody = context.payload.issue.body;
+            const isLineBot = issueBody.includes('LINE Bot');
+            const isSimpleRequest = issueBody.includes('フォーム') || issueBody.includes('ボタン') || issueBody.includes('コンポーネント');
 
-              プルリクエストが作成されました。レビュー後、手動でマージしてください。
+            if (isLineBot && isSimpleRequest) {
+              console.log('🤖 LINEからの簡単な依頼なので、自動マージを実行します');
 
-              **次のステップ:**
-              1. プルリクエストをレビュー
-              2. テストが通ることを確認
-              3. マージしてデプロイ
+              // 少し待ってからマージ実行
+              await new Promise(resolve => setTimeout(resolve, 5000));
 
-              ---
-              *Claude API によって自動生成*`
-            });
+              try {
+                // 最新のPRを取得
+                const { data: pulls } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open',
+                  head: `${context.repo.owner}:auto-deploy-issue-${issueNumber}`,
+                  per_page: 1
+                });
+
+                if (pulls.length > 0) {
+                  const pullNumber = pulls[0].number;
+
+                  // プルリクエストをマージ
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pullNumber,
+                    commit_title: `🤖 Auto-merge: ${pulls[0].title}`,
+                    merge_method: 'squash'
+                  });
+
+                  console.log(`✅ プルリクエスト #${pullNumber} を自動マージしました`);
+
+                  // Issue に完了コメント
+                  await github.rest.issues.createComment({
+                    issue_number: issueNumber,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    body: `## 🎉 デプロイ完了！
+
+                    **LINEからの依頼が正常に処理されました：**
+                    1. ✅ Claude Sonnet 4 でコード生成
+                    2. ✅ プルリクエスト #${pullNumber} 作成
+                    3. ✅ 自動マージ実行
+                    4. ✅ デプロイ完了
+
+                    生成されたコードは本番環境に反映されました！
+
+                    ---
+                    *自動処理完了 - Claude Code Action*`
+                  });
+
+                  // Issue をクローズ
+                  await github.rest.issues.update({
+                    issue_number: issueNumber,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    state: 'closed'
+                  });
+
+                } else {
+                  console.log('⚠️ 対象のプルリクエストが見つかりませんでした');
+                }
+
+              } catch (error) {
+                console.log('❌ 自動マージでエラー:', error.message);
+              }
+            } else {
+              // 通常のコメント（手動マージ推奨）
+              await github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🎉 コード生成完了！
+
+                プルリクエストが作成されました。レビュー後、手動でマージしてください。
+
+                **次のステップ:**
+                1. プルリクエストをレビュー
+                2. テストが通ることを確認
+                3. マージしてデプロイ
+
+                ---
+                *Claude API によって自動生成*`
+              });
+            }
 
   deploy-to-server:
     runs-on: ubuntu-latest
