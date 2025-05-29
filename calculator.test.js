@@ -1,75 +1,260 @@
+/**
+ * 🧪 Calculator クラステストファイル
+ *
+ * 【初心者向け解説】
+ * このファイルは「テスト」を書くファイルです。
+ * テストとは「コードが正しく動くかをチェックする」仕組みです。
+ *
+ * 📚 学習ポイント：
+ * - Jestテストフレームワークの使い方
+ * - describe()とtest()の違い
+ * - expect()とtoBe()の使い方（アサーション）
+ * - エラーテストの書き方
+ * - テスト駆動開発（TDD）の考え方
+ *
+ * 💡 なぜテストが重要？
+ * - バグ（不具合）を早期発見できる
+ * - コードを安全に変更できる
+ * - ドキュメントの役割も果たす
+ * - チーム開発で品質を保てる
+ */
+
+// 📦 テスト対象のCalculatorクラスを読み込み
+// require()は「他のファイルを読み込む」Node.jsの機能
 const Calculator = require('./index');
 
-describe('Calculator', () => {
-  let calc;
+/**
+ * 📋 describe()：テストをグループ化する
+ *
+ * 【初心者向け解説】
+ * describe()は「関連するテストをまとめる」ための関数です。
+ * 1つ目の引数：グループの名前（何をテストするか）
+ * 2つ目の引数：実際のテストを書く関数
+ */
+describe('Calculator クラス', () => {
+    // 🏗️ テスト前の準備（セットアップ）
+    // 【解説】各テストで使う計算機インスタンスを作成
+    let calc;
 
-  beforeEach(() => {
-    calc = new Calculator();
-  });
-
-  describe('add', () => {
-    test('正の数の足し算', () => {
-      expect(calc.add(2, 3)).toBe(5);
+    /**
+     * beforeEach()：各テスト実行前に必ず実行される
+     *
+     * 【初心者向け解説】
+     * この関数は「各テストの前に必ず実行される準備処理」です。
+     * 全てのテストで同じ初期状態から始めることができます。
+     */
+    beforeEach(() => {
+        calc = new Calculator();  // 新しい計算機を作成
     });
 
-    test('負の数の足し算', () => {
-      expect(calc.add(-2, -3)).toBe(-5);
+    /**
+     * 🔢 足し算のテストグループ
+     *
+     * 【初心者向け解説】
+     * ネストした（入れ子の）describe()で、
+     * さらに細かくテストを分類できます。
+     */
+    describe('add() メソッド', () => {
+        /**
+         * test()：実際のテストケース
+         *
+         * 【初心者向け解説】
+         * test()関数で「1つのテストケース」を定義します。
+         * 1つ目の引数：テストの説明（何を確認するか）
+         * 2つ目の引数：実際のテスト処理
+         */
+        test('正の数同士の足し算', () => {
+            // 🎯 テストの3段階：AAA（Arrange, Act, Assert）
+
+            // Arrange（準備）：テスト用のデータを準備
+            const a = 5;
+            const b = 3;
+            const expected = 8;  // 期待する結果
+
+            // Act（実行）：テスト対象の機能を実行
+            const result = calc.add(a, b);
+
+            // Assert（検証）：結果が期待通りかチェック
+            // expect()で「実際の結果」を指定
+            // toBe()で「期待する結果」を指定
+            expect(result).toBe(expected);
+        });
+
+        test('負の数同士の足し算', () => {
+            // 【解説】負の数でも正しく計算できるかテスト
+            expect(calc.add(-5, -3)).toBe(-8);
+        });
+
+        test('正の数と負の数の足し算', () => {
+            // 【解説】異なる符号の数値でも正しく計算できるかテスト
+            expect(calc.add(10, -3)).toBe(7);
+            expect(calc.add(-10, 3)).toBe(-7);
+        });
+
+        test('小数点の足し算', () => {
+            // 【解説】小数点計算の精度をテスト
+            // toBeCloseTo()は小数点の誤差を考慮した検証
+            expect(calc.add(0.1, 0.2)).toBeCloseTo(0.3, 10);
+        });
+
+        test('ゼロとの足し算', () => {
+            // 【解説】0との計算（境界値テスト）
+            expect(calc.add(5, 0)).toBe(5);
+            expect(calc.add(0, 5)).toBe(5);
+        });
     });
 
-    test('ゼロとの足し算', () => {
-      expect(calc.add(5, 0)).toBe(5);
+    /**
+     * ➖ 引き算のテストグループ
+     */
+    describe('subtract() メソッド', () => {
+        test('基本的な引き算', () => {
+            expect(calc.subtract(10, 4)).toBe(6);
+        });
+
+        test('負の結果になる引き算', () => {
+            // 【解説】結果が負数になるケースもテスト
+            expect(calc.subtract(3, 7)).toBe(-4);
+        });
+
+        test('同じ数同士の引き算', () => {
+            // 【解説】同じ数を引いた場合は0になる
+            expect(calc.subtract(5, 5)).toBe(0);
+        });
     });
 
-    test('小数点の足し算', () => {
-      expect(calc.add(0.1, 0.2)).toBeCloseTo(0.3);
-    });
-  });
+    /**
+     * ✖️ 掛け算のテストグループ
+     */
+    describe('multiply() メソッド', () => {
+        test('基本的な掛け算', () => {
+            expect(calc.multiply(6, 7)).toBe(42);
+        });
 
-  describe('subtract', () => {
-    test('正の数の引き算', () => {
-      expect(calc.subtract(5, 3)).toBe(2);
-    });
+        test('ゼロとの掛け算', () => {
+            // 【解説】0をかけた場合は必ず0になる
+            expect(calc.multiply(5, 0)).toBe(0);
+            expect(calc.multiply(0, 5)).toBe(0);
+        });
 
-    test('負の数の引き算', () => {
-      expect(calc.subtract(-2, -3)).toBe(1);
-    });
-  });
-
-  describe('multiply', () => {
-    test('正の数の掛け算', () => {
-      expect(calc.multiply(4, 5)).toBe(20);
-    });
-
-    test('ゼロとの掛け算', () => {
-      expect(calc.multiply(5, 0)).toBe(0);
-    });
-  });
-
-  describe('divide', () => {
-    test('正の数の割り算', () => {
-      expect(calc.divide(10, 2)).toBe(5);
+        test('負の数の掛け算', () => {
+            // 【解説】負数の掛け算ルール
+            expect(calc.multiply(-3, 4)).toBe(-12);   // 負×正=負
+            expect(calc.multiply(3, -4)).toBe(-12);   // 正×負=負
+            expect(calc.multiply(-3, -4)).toBe(12);   // 負×負=正
+        });
     });
 
-    test('ゼロで割るとエラーが発生', () => {
-      expect(() => calc.divide(10, 0)).toThrow('ゼロで割ることはできません');
-    });
-  });
+    /**
+     * ➗ 割り算のテストグループ
+     */
+    describe('divide() メソッド', () => {
+        test('基本的な割り算', () => {
+            expect(calc.divide(15, 3)).toBe(5);
+        });
 
-  describe('sqrt', () => {
-    test('正の数の平方根', () => {
-      expect(calc.sqrt(16)).toBe(4);
+        test('小数点になる割り算', () => {
+            // 【解説】割り切れない場合の小数点テスト
+            expect(calc.divide(7, 2)).toBe(3.5);
+        });
+
+        /**
+         * 🚨 エラーケースのテスト
+         *
+         * 【初心者向け解説】
+         * エラーが正しく発生するかもテストする必要があります。
+         * toThrow()は「エラーが投げられるか」をチェックします。
+         */
+        test('ゼロで割った場合はエラーを投げる', () => {
+            // expect()の中で関数を呼ぶ時は、() => の形式にする
+            // こうしないと、テスト実行時にエラーでテストが止まってしまう
+            expect(() => calc.divide(10, 0)).toThrow('0で割ることはできません');
+        });
+
+        test('負の数での割り算', () => {
+            expect(calc.divide(-10, 2)).toBe(-5);
+            expect(calc.divide(10, -2)).toBe(-5);
+            expect(calc.divide(-10, -2)).toBe(5);
+        });
     });
 
-    test('ゼロの平方根', () => {
-      expect(calc.sqrt(0)).toBe(0);
+    /**
+     * 🔍 入力値検証のテストグループ
+     *
+     * 【初心者向け解説】
+     * 正常な動作だけでなく、間違った入力に対する
+     * エラーハンドリングもテストします。
+     */
+    describe('入力値検証', () => {
+        test('文字列を入力した場合はエラー', () => {
+            // 【解説】数値以外のデータ型でエラーが出るかテスト
+            expect(() => calc.add('5', 3)).toThrow('引数は数値である必要があります');
+            expect(() => calc.add(5, '3')).toThrow('引数は数値である必要があります');
+        });
+
+        test('nullを入力した場合はエラー', () => {
+            // 【解説】null（空の値）でエラーが出るかテスト
+            expect(() => calc.add(null, 3)).toThrow('引数は数値である必要があります');
+        });
+
+        test('undefinedを入力した場合はエラー', () => {
+            // 【解説】undefined（未定義）でエラーが出るかテスト
+            expect(() => calc.add(undefined, 3)).toThrow('引数は数値である必要があります');
+        });
+
+        test('NaNを入力した場合はエラー', () => {
+            // 【解説】NaN（Not a Number）でエラーが出るかテスト
+            expect(() => calc.add(NaN, 3)).toThrow('有効な数値を入力してください');
+        });
     });
 
-    test('小数の平方根', () => {
-      expect(calc.sqrt(2.25)).toBe(1.5);
-    });
+    /**
+     * 🏁 統合テスト（複数の機能を組み合わせたテスト）
+     *
+     * 【初心者向け解説】
+     * 実際の使用例に近い、複数の計算を組み合わせたテストです。
+     */
+    describe('統合テスト', () => {
+        test('複数の計算を組み合わせ', () => {
+            // (5 + 3) × 2 ÷ 4 = ?
+            const step1 = calc.add(5, 3);      // 8
+            const step2 = calc.multiply(step1, 2);  // 16
+            const step3 = calc.divide(step2, 4);    // 4
 
-    test('負の数の平方根はエラーが発生', () => {
-      expect(() => calc.sqrt(-1)).toThrow('負の数の平方根は計算できません');
+            expect(step3).toBe(4);
+        });
+
+        test('連続した計算でもエラーが起きない', () => {
+            // 【解説】同じインスタンスで連続計算してもOKか確認
+            expect(calc.add(1, 1)).toBe(2);
+            expect(calc.multiply(3, 3)).toBe(9);
+            expect(calc.subtract(10, 5)).toBe(5);
+            expect(calc.divide(8, 2)).toBe(4);
+        });
     });
-  });
 });
+
+/**
+ * 🎯 テストのベストプラクティス
+ *
+ * 【初心者向け解説】
+ * 良いテストを書くためのポイント：
+ *
+ * 1. 📝 テスト名は分かりやすく
+ *    「何をテストするか」が一目で分かる名前にする
+ *
+ * 2. 🎯 1つのテストで1つのことだけ確認
+ *    複数のことを1つのテストでチェックしない
+ *
+ * 3. 🔄 AAA パターンを使う
+ *    Arrange（準備）→ Act（実行）→ Assert（検証）
+ *
+ * 4. 🚨 正常系とエラー系を両方テスト
+ *    正しい入力だけでなく、間違った入力もテスト
+ *
+ * 5. 🔍 境界値をテスト
+ *    0、負数、小数点など、特殊なケースもテスト
+ *
+ * 6. 📋 独立性を保つ
+ *    テスト同士が互いに影響しないようにする
+ */

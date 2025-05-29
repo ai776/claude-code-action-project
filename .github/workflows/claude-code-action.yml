@@ -1,68 +1,128 @@
+# 🤖 GitHub Actions ワークフロー設定ファイル
+#
+# 【初心者向け解説】
+# このファイルは「CI/CD パイプライン」を定義しています。
+# CI/CD = Continuous Integration / Continuous Deployment
+# （継続的統合 / 継続的デプロイメント）
+#
+# 📚 学習ポイント：
+# - GitHub Actions の基本構文（YAML）
+# - ワークフローのトリガー（いつ実行するか）
+# - ジョブとステップの違い
+# - 環境変数とシークレットの使い方
+# - 並列実行と依存関係
+#
+# 💡 なぜCI/CDが重要？
+# - コードの品質を自動でチェック
+# - 人的ミスを減らす
+# - 開発速度を向上させる
+# - チーム全体で一貫した品質を保つ
+
+# ワークフローの名前（GitHub上で表示される）
 name: CI/CD Pipeline
 
+# 🔄 on: ワークフローをいつ実行するか（トリガー条件）
+# 【初心者向け解説】
+# GitHub上で特定のイベントが発生した時に、このワークフローが自動実行されます
 on:
+  # プルリクエスト関連のイベント
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]  # PR作成、更新、再オープン時
+
+  # プッシュイベント
   push:
-    branches: [main, master]
+    branches: [main, master]  # main または master ブランチにプッシュされた時
+
+  # Issueのコメントイベント
   issue_comment:
-    types: [created]
+    types: [created]  # 新しいコメントが作成された時
+
+  # 新しいIssueイベント
   issues:
-    types: [opened]
+    types: [opened]  # 新しいIssueが作成された時
 
-# より明示的な権限設定
+# 🔐 permissions: このワークフローに与える権限
+# 【初心者向け解説】
+# セキュリティのため、必要最小限の権限のみを指定します
 permissions:
-  contents: read
-  issues: write
-  pull-requests: write
-  actions: read
-  checks: write
-  statuses: write
+  contents: read        # リポジトリのコンテンツを読む権限
+  issues: write        # Issueにコメント・編集する権限
+  pull-requests: write # プルリクエストにコメント・編集する権限
+  actions: read        # GitHub Actionsの情報を読む権限
+  checks: write        # チェック結果を書く権限
+  statuses: write      # ステータスを更新する権限
 
+# 🏗️ jobs: ワークフローで実行するジョブ（作業）の定義
+# 【初心者向け解説】
+# ジョブは「1つの仮想マシン上で実行される一連の作業」です
+# 複数のジョブは並列で実行されますが、依存関係を設定することもできます
 jobs:
+
+  # 🧪 テスト実行ジョブ
   test:
-    runs-on: ubuntu-latest
-    name: Run Tests
+    runs-on: ubuntu-latest  # 実行環境（Ubuntu Linux の最新版）
+    name: Run Tests         # ジョブの表示名
+
+    # 条件分岐：コメントやIssue作成時は実行しない
     if: github.event_name != 'issue_comment' && github.event_name != 'issues'
-    # ジョブレベルでも権限を明示
+
+    # このジョブ専用の権限設定
     permissions:
       contents: read
       actions: read
 
+    # 📋 steps: ジョブ内で実行する具体的な手順
+    # 【初心者向け解説】
+    # ステップは「1つずつ順番に実行される作業」です
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
+      # 📥 リポジトリのコードをダウンロード
+      - name: Checkout code
+        uses: actions/checkout@v4  # 既存のアクション（再利用可能な処理）を使用
+        # 【解説】uses は「誰かが作った便利な処理」を使うという意味
+
+      # 🟢 Node.js 環境をセットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '18'  # Node.js バージョン 18 を使用
+        # 【解説】with は「設定パラメータ」を渡すという意味
 
+      # 📦 依存関係（ライブラリ）をインストール
       - name: Install dependencies
-        run: npm install
+        run: npm install  # シェルコマンドを実行
+        # 【解説】run は「ターミナルコマンドを実行」という意味
 
+      # 🎭 Playwright ブラウザをインストール
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
         env:
-          CI: true
+          CI: true  # 環境変数（この場合はCI環境であることを示す）
+        # 【解説】env は「環境変数」を設定する
 
+      # 🧪 メインのテストを実行
       - name: Run core tests (excluding Playwright)
         run: npm run test:ci
         env:
           CI: true
 
+      # 🎭 Playwright テストを実行（失敗してもワークフローを継続）
       - name: Run Playwright MCP tests (if needed)
         run: npm run test:playwright:ci
         env:
           CI: true
-          DISPLAY: :99
-        continue-on-error: true  # Playwrightテストが失敗してもワークフローを続行
+          DISPLAY: :99  # 仮想ディスプレイの設定
+        continue-on-error: true  # このステップが失敗してもワークフロー継続
+        # 【解説】continue-on-error: true は「エラーでも止まらない」という意味
 
+  # 🤖 Claude API応答ジョブ（@claudeコメント用）
   claude-response:
     runs-on: ubuntu-latest
     name: Claude Response
+
+    # 実行条件：Issueコメントで@claudeがメンションされた時のみ
     if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')
-    # ジョブレベルでも権限を明示
+
     permissions:
       contents: read
       issues: write
@@ -80,6 +140,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # 🧠 Anthropic SDK をインストール（Claude API用）
       - name: Install Anthropic SDK
         run: npm install @anthropic-ai/sdk
 
@@ -88,34 +149,42 @@ jobs:
         env:
           CI: true
 
+      # 🤖 Claude API を呼び出してコメントに応答
+      # 【初心者向け解説】
+      # actions/github-script@v7 は「GitHub API を JavaScript で操作できる」アクション
       - name: Analyze comment and respond with Claude
         uses: actions/github-script@v7
         env:
+          # 🔐 シークレット（秘密情報）の使用
+          # 【解説】${{ secrets.XXX }} でリポジトリ設定のシークレットを取得
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}  # GitHub API 用トークン
           script: |
-            // Anthropic SDKをインポート
+            // 📝 JavaScript コード（ここからは通常のJSコード）
+
+            // Anthropic SDK をインポート
             const Anthropic = require('@anthropic-ai/sdk');
 
-            const comment = context.payload.comment.body;
-            const commentUser = context.payload.comment.user.login;
-            const issueTitle = context.payload.issue.title;
-            const issueBody = context.payload.issue.body;
+            // GitHub イベントからデータを取得
+            const comment = context.payload.comment.body;      // コメント内容
+            const commentUser = context.payload.comment.user.login;  // コメントユーザー
+            const issueTitle = context.payload.issue.title;   // Issue タイトル
+            const issueBody = context.payload.issue.body;     // Issue 本文
 
-            // Claude APIクライアントを初期化
+            // Claude API クライアントを初期化
             const anthropic = new Anthropic({
-              apiKey: process.env.ANTHROPIC_API_KEY,
+              apiKey: process.env.ANTHROPIC_API_KEY,  // 環境変数からAPIキー取得
             });
 
             try {
               console.log('🤖 Calling Claude API...');
 
-              // Claudeにリクエストを送信
+              // Claude API にリクエスト送信
               const message = await anthropic.messages.create({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 1000,
-                temperature: 0.7,
+                model: 'claude-sonnet-4-20250514',  // 最新のClaude Sonnet 4モデル
+                max_tokens: 1000,    // 最大トークン数
+                temperature: 0.7,    // 創造性のレベル（0-1）
                 messages: [{
                   role: 'user',
                   content: `あなたは優秀な開発アシスタントです。以下のGitHub Issueに対して適切な応答を日本語で生成してください。
@@ -128,13 +197,13 @@ jobs:
                 }]
               });
 
-              // Claudeからの応答を整形
+              // Claude からの応答を整形
               let response = "## 🤖 Claude からの返答\n\n";
               response += "@" + commentUser + " さん、ご依頼ありがとうございます！\n\n";
               response += message.content[0].text;
               response += "\n\n---\n*この返答は Claude API (claude-sonnet-4-20250514) によって生成されました*";
 
-              // GitHubにコメントを投稿
+              // GitHub にコメントを投稿
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -163,10 +232,14 @@ jobs:
               });
             }
 
+  # 🤖 新しいIssue用Claude応答ジョブ
   claude-issue-response:
     runs-on: ubuntu-latest
     name: Claude Issue Response
+
+    # 実行条件：新しいIssueのタイトルに@claudeが含まれている時
     if: github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.title, '@claude')
+
     permissions:
       contents: read
       issues: write
@@ -180,6 +253,7 @@ jobs:
       - name: Install Anthropic SDK
         run: npm init -y && npm install @anthropic-ai/sdk
 
+      # 📝 新しいIssueに対してClaude APIで応答
       - name: Respond to new issue with Claude
         uses: actions/github-script@v7
         env:
@@ -187,13 +261,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Claude API を使った自動応答処理
+            // （同様の処理のため、詳細コメントは省略）
             const Anthropic = require('@anthropic-ai/sdk');
 
             const issueTitle = context.payload.issue.title;
             const issueBody = context.payload.issue.body;
             const issueUser = context.payload.issue.user.login;
 
-            // Claude APIクライアントを初期化
             const anthropic = new Anthropic({
               apiKey: process.env.ANTHROPIC_API_KEY,
             });
@@ -201,7 +276,6 @@ jobs:
             try {
               console.log('🤖 Calling Claude API for new issue...');
 
-              // Claudeにリクエストを送信
               const message = await anthropic.messages.create({
                 model: 'claude-sonnet-4-20250514',
                 max_tokens: 2000,
@@ -218,13 +292,11 @@ jobs:
                 }]
               });
 
-              // Claudeからの応答を整形
               let response = "## 🤖 Claude からの返答\n\n";
               response += "@" + issueUser + " さん、ご依頼ありがとうございます！\n\n";
               response += message.content[0].text;
               response += "\n\n---\n*この返答は Claude API (claude-sonnet-4-20250514) によって生成されました*";
 
-              // GitHubにコメントを投稿
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -237,7 +309,6 @@ jobs:
             } catch (error) {
               console.log('⚠️ Error calling Claude API:', error.message);
 
-              // エラー時のフォールバック応答
               let fallbackResponse = "## 🤖 Claude からの返答\n\n";
               fallbackResponse += "@" + issueUser + " さん、申し訳ございません。\n\n";
               fallbackResponse += "現在、Claude APIの呼び出しでエラーが発生しました。\n";
@@ -253,12 +324,19 @@ jobs:
               });
             }
 
+  # 📝 自動コードレビュージョブ
   code-review:
     runs-on: ubuntu-latest
     name: Automated Review
+
+    # 実行条件：プルリクエストの時のみ
     if: github.event_name == 'pull_request'
+
+    # 依存関係：testジョブが完了してから実行
+    # 【初心者向け解説】
+    # needs により「testが成功してからcode-reviewを実行」という順序を指定
     needs: test
-    # ジョブレベルでも権限を明示
+
     permissions:
       contents: read
       issues: write
@@ -268,22 +346,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 全履歴を取得（差分比較のため）
 
+      # 📊 変更されたファイルを取得
       - name: Get changed files
-        id: changed-files
+        id: changed-files  # このステップの結果を他のステップで使うためのID
         run: |
+          # GITHUB_OUTPUT に結果を出力（他のステップで参照可能）
           echo "files<<EOF" >> $GITHUB_OUTPUT
           git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # 📝 レビューコメントを作成・投稿
       - name: Create review comment
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // 変更ファイル一覧を取得
             const changedFiles = "${{ steps.changed-files.outputs.files }}".split('\n').filter(f => f.trim());
 
+            // レビューコメント内容を作成
             const reviewComment = "## 🤖 自動コードレビュー\n\n" +
               "### 📋 変更されたファイル\n" +
               changedFiles.map(file => "- " + file).join('\n') + "\n\n" +
@@ -301,7 +384,7 @@ jobs:
               "---\n" +
               "*このレビューは GitHub Actions によって自動生成されました*";
 
-            // より詳細なエラーハンドリング
+            // エラーハンドリング付きでコメント投稿
             try {
               console.log('🔍 Attempting to post code review...');
               console.log('📝 Issue number:', context.issue.number);
@@ -318,6 +401,7 @@ jobs:
 
               console.log('✅ Code review comment posted successfully');
               console.log('🔗 Comment URL:', result.data.html_url);
+
             } catch (error) {
               console.log('⚠️ Failed to post code review comment');
               console.log('❌ Error type:', error.constructor.name);
@@ -325,7 +409,7 @@ jobs:
               console.log('❌ Error status:', error.status);
               console.log('📝 Review content length:', reviewComment.length);
 
-              // フォールバック: より短いコメントを試す
+              // フォールバック：より短いコメントを試す
               if (error.message.includes('Resource not accessible')) {
                 console.log('🔄 Trying fallback review comment...');
                 try {
@@ -342,3 +426,25 @@ jobs:
                 }
               }
             }
+
+# 📚 GitHub Actions 学習リソース
+#
+# 【初心者向け解説】
+# このワークフローを理解するために参考になるリソース：
+#
+# 🔗 公式ドキュメント：
+# - https://docs.github.com/ja/actions
+#
+# 📖 重要な概念：
+# - ワークフロー：複数のジョブをまとめた自動化処理
+# - ジョブ：1つの仮想マシンで実行される作業単位
+# - ステップ：ジョブ内の個々の作業
+# - アクション：再利用可能な処理単位
+# - シークレット：パスワードなどの秘密情報
+# - 環境変数：設定値を渡すための仕組み
+#
+# 🎯 このワークフローの流れ：
+# 1. コードプッシュ/PR作成 → テスト実行
+# 2. @claudeコメント → Claude API応答
+# 3. プルリクエスト → 自動コードレビュー
+# 4. すべて並列または順次実行で効率化
