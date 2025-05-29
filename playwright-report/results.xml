@@ -1,0 +1,22 @@
+<testsuites id="" name="" tests="6" failures="0" skipped="1" errors="0" time="8.461095000000002">
+<testsuite name="example.spec.js" timestamp="2025-05-28T09:00:12.474Z" hostname="chromium" tests="6" failures="0" skipped="1" time="20.866" errors="0">
+<testcase name="Claude Code Action - Playwright Tests › has title" classname="example.spec.js" time="3.885">
+</testcase>
+<testcase name="Claude Code Action - Playwright Tests › get started link" classname="example.spec.js" time="4.971">
+</testcase>
+<testcase name="Claude Code Action - Playwright Tests › search functionality" classname="example.spec.js" time="4.175">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Claude Code Action - Playwright Tests › navigation menu" classname="example.spec.js" time="4.36">
+</testcase>
+<testcase name="Claude Code Action - Playwright Tests › page content loads" classname="example.spec.js" time="1.822">
+</testcase>
+<testcase name="Claude Code Action - Playwright Tests › responsive design" classname="example.spec.js" time="1.653">
+</testcase>
+</testsuite>
+</testsuites>
