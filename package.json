@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "jest",
+    "test": "jest --testPathIgnorePatterns=playwright-mcp.test.js",
+    "test:all": "jest",
+    "test:ci": "jest --testPathIgnorePatterns=playwright-mcp.test.js --maxWorkers=1",
+    "test:playwright": "jest playwright-mcp.test.js",
+    "test:playwright:ci": "jest playwright-mcp.test.js --maxWorkers=1 --timeout=30000",
     "lint": "echo 'Linting completed - no issues found'",
     "claude:review": "node claude-dev-assistant.js review",
     "claude:implement": "node claude-dev-assistant.js implement",
@@ -50,6 +54,7 @@
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!@modelcontextprotocol)"
-    ]
+    ],
+    "testTimeout": 30000
   }
 }
