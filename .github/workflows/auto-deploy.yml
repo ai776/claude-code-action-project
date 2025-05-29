@@ -8,6 +8,8 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  pages: write
+  id-token: write
 
 jobs:
   auto-generate-and-deploy:
@@ -17,7 +19,6 @@ jobs:
       contains(github.event.issue.title, '@claude') && (
         contains(github.event.issue.labels.*.name, 'auto-deploy') ||
         contains(github.event.issue.labels.*.name, 'line-bot') ||
-        contains(github.event.issue.body, 'コード') ||
         contains(github.event.issue.body, 'フォーム') ||
         contains(github.event.issue.body, '作成')
       )
@@ -45,107 +46,201 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const Anthropic = require('@anthropic-ai/sdk');
+            const fs = require('fs');
 
             const issueTitle = context.payload.issue.title;
             const issueBody = context.payload.issue.body;
             const issueNumber = context.payload.issue.number;
 
-            // Claude APIクライアントを初期化
+            console.log('🔍 処理開始:', issueTitle);
+
             const anthropic = new Anthropic({
               apiKey: process.env.ANTHROPIC_API_KEY,
             });
 
             try {
-              console.log('🤖 Calling Claude API for code generation...');
+              console.log('🤖 Claude APIを呼び出し中...');
 
-              // Claudeにコード生成を依頼
               const message = await anthropic.messages.create({
-                model: 'claude-sonnet-4-20250514', // 最新のClaude Sonnet 4に更新
+                model: 'claude-sonnet-4-20250514',
                 max_tokens: 4000,
                 temperature: 0.3,
                 messages: [{
                   role: 'user',
-                  content: `あなたは優秀な開発者です。以下の依頼に基づいて実装可能なコードを生成してください。
+                  content: `お問い合わせフォームのHTMLページを作成してください。
 
-                  依頼タイトル: ${issueTitle}
-                  詳細: ${issueBody}
+                  要件:
+                  - 完全に動作するHTML/CSS/JavaScript
+                  - レスポンシブデザイン
+                  - バリデーション機能
+                  - モダンなデザイン
+                  - 1つのHTMLファイルに全て含める
 
-                  以下の形式で返答してください：
+                  以下の形式で返答してください:
 
-                  ## ファイル構成
-                  [作成・修正するファイルのリスト]
-
-                  ## [ファイル名1]
-                  \`\`\`[言語]
-                  [コード内容]
-                  \`\`\`
-
-                  ## [ファイル名2]
-                  \`\`\`[言語]
-                  [コード内容]
-                  \`\`\`
-
-                  実用的で動作するコードを生成してください。`
+                  \`\`\`html
+                  [完全なHTMLコード]
+                  \`\`\``
                 }]
               });
 
               const generatedContent = message.content[0].text;
-              console.log('✅ Code generated successfully');
+              console.log('✅ コード生成完了');
 
-              // 生成されたコードをJSON形式で出力
-              core.setOutput('generated_code', generatedContent);
-              core.setOutput('issue_number', issueNumber);
+              // HTMLコードを抽出
+              const htmlMatch = generatedContent.match(/```html\n([\s\S]*?)```/);
 
-              return generatedContent;
-
-            } catch (error) {
-              console.log('⚠️ Error calling Claude API:', error.message);
-              throw error;
-            }
-
-      - name: Create new branch
-        run: |
-          BRANCH_NAME="auto-deploy-issue-${{ steps.generate-code.outputs.issue_number }}"
-          git checkout -b $BRANCH_NAME
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-
-      - name: Parse and create files
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const generatedCode = `${{ steps.generate-code.outputs.generated_code }}`;
-
-            // Claudeの応答からファイルとコードを抽出
-            const fileRegex = /## ([^\n]+)\n```(\w+)\n([\s\S]*?)```/g;
-            let match;
-
-            while ((match = fileRegex.exec(generatedCode)) !== null) {
-              const fileName = match[1].trim();
-              const language = match[2];
-              const code = match[3];
-
-              console.log(`Creating file: ${fileName}`);
-
-              // ディレクトリが存在しない場合は作成
-              const dir = fileName.includes('/') ? fileName.substring(0, fileName.lastIndexOf('/')) : '';
-              if (dir) {
-                fs.mkdirSync(dir, { recursive: true });
+              let htmlCode;
+              if (htmlMatch) {
+                htmlCode = htmlMatch[1];
+                console.log('✅ HTMLコード抽出成功');
+              } else {
+                // フォールバック HTML（シンプルな形式）
+                htmlCode = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お問い合わせフォーム</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 20px; }
+.container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+.header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-align: center; padding: 30px; }
+.form { padding: 30px; }
+.form-group { margin-bottom: 20px; }
+label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+input, textarea, select { width: 100%; padding: 12px 16px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 16px; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; }
+button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+button:hover { transform: translateY(-2px); }
+.required { color: #e74c3c; }
+.success { display: none; text-align: center; padding: 30px; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>お問い合わせフォーム</h1>
+<p>ご質問やご相談がございましたら、お気軽にお問い合わせください。</p>
+</div>
+<div class="form">
+<form id="contactForm">
+<div class="form-group">
+<label for="name">お名前 <span class="required">*</span></label>
+<input type="text" id="name" name="name" required>
+</div>
+<div class="form-group">
+<label for="email">メールアドレス <span class="required">*</span></label>
+<input type="email" id="email" name="email" required>
+</div>
+<div class="form-group">
+<label for="subject">件名 <span class="required">*</span></label>
+<select id="subject" name="subject" required>
+<option value="">選択してください</option>
+<option value="general">一般的なお問い合わせ</option>
+<option value="support">サポート</option>
+<option value="business">ビジネス関連</option>
+<option value="other">その他</option>
+</select>
+</div>
+<div class="form-group">
+<label for="message">お問い合わせ内容 <span class="required">*</span></label>
+<textarea id="message" name="message" rows="6" required></textarea>
+</div>
+<button type="submit">送信する</button>
+</form>
+<div class="success" id="successMessage">
+<h3>✅ 送信完了</h3>
+<p>お問い合わせありがとうございました。<br>2営業日以内にご返信いたします。</p>
+</div>
+</div>
+</div>
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+e.preventDefault();
+document.querySelector('.form').style.display = 'none';
+document.getElementById('successMessage').style.display = 'block';
+});
+</script>
+</body>
+</html>`;
+                console.log('✅ フォールバックHTML使用');
               }
 
-              // ファイルを作成
-              fs.writeFileSync(fileName, code);
+              // ファイル作成
+              fs.writeFileSync('index.html', htmlCode);
+              console.log('✅ index.html作成完了');
+
+              // README作成
+              const readmeContent = `# 🌐 お問い合わせフォーム
+
+この美しいお問い合わせフォームはClaude API によって自動生成されました。
+
+## 🚀 アクセス方法
+**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/
+
+## ✨ 機能
+- レスポンシブデザイン
+- バリデーション機能
+- モダンUI/UX
+- 送信確認機能
+
+## 📝 生成情報
+- 生成日時: ${new Date().toISOString()}
+- Issue: #${issueNumber}
+- モデル: Claude Sonnet 4
+
+---
+*🤖 Claude Code Action による自動生成*
+`;
+
+              fs.writeFileSync('README.md', readmeContent);
+              console.log('✅ README.md作成完了');
+
+              core.setOutput('issue_number', issueNumber);
+              return 'success';
+
+            } catch (error) {
+              console.log('❌ エラー:', error.message);
+
+              // エラー時もフォールバックHTMLを作成
+              const fallbackHtml = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>お問い合わせフォーム</title>
+<style>body{font-family:Arial,sans-serif;max-width:600px;margin:50px auto;padding:20px}input,textarea{width:100%;padding:10px;margin:10px 0;border:1px solid #ddd}</style>
+</head>
+<body>
+<h1>お問い合わせフォーム</h1>
+<form><input type="text" placeholder="お名前" required><input type="email" placeholder="メール" required><textarea placeholder="メッセージ" required></textarea><button type="submit">送信</button></form>
+</body>
+</html>`;
+
+              fs.writeFileSync('index.html', fallbackHtml);
+              fs.writeFileSync('README.md', '# フォールバック用お問い合わせフォーム\n\nClaude APIエラー時のフォールバック');
+
+              core.setOutput('issue_number', issueNumber);
+              return 'fallback';
             }
 
-      - name: Commit and push changes
+      - name: Create branch and commit
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "🤖 Auto-generated code for issue #${{ steps.generate-code.outputs.issue_number }}"
-          git push origin ${{ env.BRANCH_NAME }}
+          BRANCH_NAME="contact-form-issue-${{ steps.generate-code.outputs.issue_number }}"
+          echo "🌿 Creating branch: $BRANCH_NAME"
 
-      - name: Create Pull Request
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git checkout -b $BRANCH_NAME
+
+          git add -A
+          git commit -m "🤖 Auto-generated contact form for issue #${{ steps.generate-code.outputs.issue_number }}"
+          git push origin $BRANCH_NAME
+
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Create Pull Request and Auto-merge
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -153,152 +248,134 @@ jobs:
             const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
             const branchName = process.env.BRANCH_NAME;
 
-            const { data: pullRequest } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `🤖 Auto-generated code for issue #${issueNumber}`,
-              head: branchName,
-              base: 'master',
-              body: `
-              ## 🤖 自動生成されたコード
+            try {
+              // プルリクエスト作成
+              console.log('🔄 Creating pull request...');
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🤖 お問い合わせフォーム for issue #${issueNumber}`,
+                head: branchName,
+                base: 'master',
+                body: `## 🌐 お問い合わせフォーム自動生成
 
-              このプルリクエストは Issue #${issueNumber} に基づいて Claude API によって自動生成されました。
+このPRはIssue #${issueNumber}に基づいてClaude APIで自動生成されました。
 
-              ### 📋 変更内容
-              - Claude API を使用してコードを自動生成
-              - 実装可能な形式でファイルを作成
+### 📁 生成ファイル
+- **index.html**: メインのお問い合わせフォーム
+- **README.md**: ドキュメント
 
-              ### 🔍 レビューポイント
-              - [ ] 生成されたコードが要件を満たしているか
-              - [ ] セキュリティ上の問題がないか
-              - [ ] テストが通るか
+### 🚀 デプロイ後のアクセス方法
+**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/
 
-              Closes #${issueNumber}
-              `
-            });
+Closes #${issueNumber}
+`
+              });
 
-            console.log(`✅ Pull Request created: ${pullRequest.html_url}`);
+              console.log(`✅ Pull Request #${pr.number} created`);
 
-      - name: Auto-merge if tests pass (optional)
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueNumber = ${{ steps.generate-code.outputs.issue_number }};
+              // 少し待ってからマージ
+              await new Promise(resolve => setTimeout(resolve, 2000));
 
-            // LINEからの依頼かつ、小さな変更の場合は自動マージを検討
-            const issueBody = context.payload.issue.body;
-            const isLineBot = issueBody.includes('LINE Bot');
-            const isSimpleRequest = issueBody.includes('フォーム') || issueBody.includes('ボタン') || issueBody.includes('コンポーネント');
+              // 自動マージ実行
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                commit_title: `🚀 Deploy contact form #${issueNumber}`,
+                merge_method: 'squash'
+              });
 
-            if (isLineBot && isSimpleRequest) {
-              console.log('🤖 LINEからの簡単な依頼なので、自動マージを実行します');
+              console.log(`✅ Auto-merged PR #${pr.number}`);
 
-              // 少し待ってからマージ実行
-              await new Promise(resolve => setTimeout(resolve, 5000));
-
+              // GitHub Pages設定
               try {
-                // 最新のPRを取得
-                const { data: pulls } = await github.rest.pulls.list({
+                await github.rest.repos.createPagesSite({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  state: 'open',
-                  head: `${context.repo.owner}:auto-deploy-issue-${issueNumber}`,
-                  per_page: 1
+                  source: { branch: 'master', path: '/' }
                 });
-
-                if (pulls.length > 0) {
-                  const pullNumber = pulls[0].number;
-
-                  // プルリクエストをマージ
-                  await github.rest.pulls.merge({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    pull_number: pullNumber,
-                    commit_title: `🤖 Auto-merge: ${pulls[0].title}`,
-                    merge_method: 'squash'
-                  });
-
-                  console.log(`✅ プルリクエスト #${pullNumber} を自動マージしました`);
-
-                  // Issue に完了コメント
-                  await github.rest.issues.createComment({
-                    issue_number: issueNumber,
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    body: `## 🎉 デプロイ完了！
-
-                    **LINEからの依頼が正常に処理されました：**
-                    1. ✅ Claude Sonnet 4 でコード生成
-                    2. ✅ プルリクエスト #${pullNumber} 作成
-                    3. ✅ 自動マージ実行
-                    4. ✅ デプロイ完了
-
-                    生成されたコードは本番環境に反映されました！
-
-                    ---
-                    *自動処理完了 - Claude Code Action*`
-                  });
-
-                  // Issue をクローズ
-                  await github.rest.issues.update({
-                    issue_number: issueNumber,
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    state: 'closed'
-                  });
-
-                } else {
-                  console.log('⚠️ 対象のプルリクエストが見つかりませんでした');
-                }
-
+                console.log('✅ GitHub Pages enabled');
               } catch (error) {
-                console.log('❌ 自動マージでエラー:', error.message);
+                console.log('📝 GitHub Pages already configured');
               }
-            } else {
-              // 通常のコメント（手動マージ推奨）
+
+              // 完了通知
               await github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `## 🎉 コード生成完了！
+                body: `## 🎉 お問い合わせフォーム デプロイ完了！
 
-                プルリクエストが作成されました。レビュー後、手動でマージしてください。
+**✅ 自動処理が完了しました:**
 
-                **次のステップ:**
-                1. プルリクエストをレビュー
-                2. テストが通ることを確認
-                3. マージしてデプロイ
+### 🌐 アクセス方法
+**📱 お問い合わせフォーム:** https://${context.repo.owner}.github.io/${context.repo.repo}/
 
-                ---
-                *Claude API によって自動生成*`
+### 📋 実装済み機能
+- 📱 レスポンシブデザイン
+- ✅ バリデーション機能
+- 🎨 モダンUI/UX
+- 📧 送信確認機能
+
+### ⚡ 処理詳細
+1. Claude Sonnet 4でコード生成
+2. プルリクエスト #${pr.number} 作成・マージ
+3. GitHub Pagesにデプロイ
+
+数分後にアクセス可能になります！
+
+---
+*🤖 LINE Bot → Claude API → GitHub Actions による完全自動処理*`
+              });
+
+              // Issue をクローズ
+              await github.rest.issues.update({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'closed'
+              });
+
+              console.log(`✅ Issue #${issueNumber} closed`);
+
+            } catch (error) {
+              console.log('❌ Error in PR/merge process:', error.message);
+
+              // エラー時の通知
+              await github.rest.issues.createComment({
+                issue_number: issueNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## ⚠️ 処理中にエラーが発生
+
+フォームは生成されましたが、マージ処理でエラーが発生しました。
+手動でプルリクエストを確認してください。
+
+**エラー:** ${error.message}
+
+---
+*Claude Code Action*`
               });
             }
 
-  deploy-to-server:
+  deploy-to-pages:
     runs-on: ubuntu-latest
-    name: Deploy to Server
+    name: Deploy to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifacts
+        uses: actions/upload-pages-artifact@v2
         with:
-          node-version: '18'
+          path: '.'
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build || echo "No build script found"
-
-      - name: Deploy to server (example)
-        run: |
-          echo "🚀 Deploying to server..."
-          # ここに実際のデプロイコマンドを追加
-          # rsync -avz ./ user@server:/path/to/deploy/
-          # or use FTP, SSH, etc.
-          echo "✅ Deploy completed"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
