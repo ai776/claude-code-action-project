@@ -95,76 +95,8 @@ jobs:
                 htmlCode = htmlMatch[1];
                 console.log('✅ HTMLコード抽出成功');
               } else {
-                // フォールバック HTML（シンプルな形式）
-                htmlCode = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>お問い合わせフォーム</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 20px; }
-.container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
-.header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-align: center; padding: 30px; }
-.form { padding: 30px; }
-.form-group { margin-bottom: 20px; }
-label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-input, textarea, select { width: 100%; padding: 12px 16px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 16px; }
-input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; }
-button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
-button:hover { transform: translateY(-2px); }
-.required { color: #e74c3c; }
-.success { display: none; text-align: center; padding: 30px; }
-</style>
-</head>
-<body>
-<div class="container">
-<div class="header">
-<h1>お問い合わせフォーム</h1>
-<p>ご質問やご相談がございましたら、お気軽にお問い合わせください。</p>
-</div>
-<div class="form">
-<form id="contactForm">
-<div class="form-group">
-<label for="name">お名前 <span class="required">*</span></label>
-<input type="text" id="name" name="name" required>
-</div>
-<div class="form-group">
-<label for="email">メールアドレス <span class="required">*</span></label>
-<input type="email" id="email" name="email" required>
-</div>
-<div class="form-group">
-<label for="subject">件名 <span class="required">*</span></label>
-<select id="subject" name="subject" required>
-<option value="">選択してください</option>
-<option value="general">一般的なお問い合わせ</option>
-<option value="support">サポート</option>
-<option value="business">ビジネス関連</option>
-<option value="other">その他</option>
-</select>
-</div>
-<div class="form-group">
-<label for="message">お問い合わせ内容 <span class="required">*</span></label>
-<textarea id="message" name="message" rows="6" required></textarea>
-</div>
-<button type="submit">送信する</button>
-</form>
-<div class="success" id="successMessage">
-<h3>✅ 送信完了</h3>
-<p>お問い合わせありがとうございました。<br>2営業日以内にご返信いたします。</p>
-</div>
-</div>
-</div>
-<script>
-document.getElementById('contactForm').addEventListener('submit', function(e) {
-e.preventDefault();
-document.querySelector('.form').style.display = 'none';
-document.getElementById('successMessage').style.display = 'block';
-});
-</script>
-</body>
-</html>`;
+                // フォールバック HTML - 外部ファイルから読み込み
+                htmlCode = fs.readFileSync('contact-form.html', 'utf8');
                 console.log('✅ フォールバックHTML使用');
               }
 
@@ -173,27 +105,28 @@ document.getElementById('successMessage').style.display = 'block';
               console.log('✅ index.html作成完了');
 
               // README作成
-              const readmeContent = `# 🌐 お問い合わせフォーム
-
-この美しいお問い合わせフォームはClaude API によって自動生成されました。
-
-## 🚀 アクセス方法
-**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/
-
-## ✨ 機能
-- レスポンシブデザイン
-- バリデーション機能
-- モダンUI/UX
-- 送信確認機能
-
-## 📝 生成情報
-- 生成日時: ${new Date().toISOString()}
-- Issue: #${issueNumber}
-- モデル: Claude Sonnet 4
-
----
-*🤖 Claude Code Action による自動生成*
-`;
+              const readmeContent = [
+                '# 🌐 お問い合わせフォーム',
+                '',
+                'この美しいお問い合わせフォームはClaude API によって自動生成されました。',
+                '',
+                '## 🚀 アクセス方法',
+                `**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/`,
+                '',
+                '## ✨ 機能',
+                '- レスポンシブデザイン',
+                '- バリデーション機能',
+                '- モダンUI/UX',
+                '- 送信確認機能',
+                '',
+                '## 📝 生成情報',
+                `- 生成日時: ${new Date().toISOString()}`,
+                `- Issue: #${issueNumber}`,
+                '- モデル: Claude Sonnet 4',
+                '',
+                '---',
+                '*🤖 Claude Code Action による自動生成*'
+              ].join('\n');
 
               fs.writeFileSync('README.md', readmeContent);
               console.log('✅ README.md作成完了');
@@ -205,20 +138,31 @@ document.getElementById('successMessage').style.display = 'block';
               console.log('❌ エラー:', error.message);
 
               // エラー時もフォールバックHTMLを作成
-              const fallbackHtml = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>お問い合わせフォーム</title>
-<style>body{font-family:Arial,sans-serif;max-width:600px;margin:50px auto;padding:20px}input,textarea{width:100%;padding:10px;margin:10px 0;border:1px solid #ddd}</style>
-</head>
-<body>
-<h1>お問い合わせフォーム</h1>
-<form><input type="text" placeholder="お名前" required><input type="email" placeholder="メール" required><textarea placeholder="メッセージ" required></textarea><button type="submit">送信</button></form>
-</body>
-</html>`;
+              try {
+                const fallbackHtml = fs.readFileSync('contact-form.html', 'utf8');
+                fs.writeFileSync('index.html', fallbackHtml);
+                console.log('✅ フォールバックindex.html作成');
+              } catch (fileError) {
+                // 最終フォールバック
+                const basicHtml = [
+                  '<!DOCTYPE html>',
+                  '<html lang="ja">',
+                  '<head>',
+                  '<meta charset="UTF-8">',
+                  '<title>お問い合わせフォーム</title>',
+                  '<style>body{font-family:Arial,sans-serif;max-width:600px;margin:50px auto;padding:20px}input,textarea{width:100%;padding:10px;margin:10px 0;border:1px solid #ddd}</style>',
+                  '</head>',
+                  '<body>',
+                  '<h1>お問い合わせフォーム</h1>',
+                  '<form><input type="text" placeholder="お名前" required><input type="email" placeholder="メール" required><textarea placeholder="メッセージ" required></textarea><button type="submit">送信</button></form>',
+                  '</body>',
+                  '</html>'
+                ].join('\n');
 
-              fs.writeFileSync('index.html', fallbackHtml);
+                fs.writeFileSync('index.html', basicHtml);
+                console.log('✅ 基本HTMLフォールバック作成');
+              }
+
               fs.writeFileSync('README.md', '# フォールバック用お問い合わせフォーム\n\nClaude APIエラー時のフォールバック');
 
               core.setOutput('issue_number', issueNumber);
@@ -257,19 +201,20 @@ document.getElementById('successMessage').style.display = 'block';
                 title: `🤖 お問い合わせフォーム for issue #${issueNumber}`,
                 head: branchName,
                 base: 'master',
-                body: `## 🌐 お問い合わせフォーム自動生成
-
-このPRはIssue #${issueNumber}に基づいてClaude APIで自動生成されました。
-
-### 📁 生成ファイル
-- **index.html**: メインのお問い合わせフォーム
-- **README.md**: ドキュメント
-
-### 🚀 デプロイ後のアクセス方法
-**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/
-
-Closes #${issueNumber}
-`
+                body: [
+                  '## 🌐 お問い合わせフォーム自動生成',
+                  '',
+                  `このPRはIssue #${issueNumber}に基づいてClaude APIで自動生成されました。`,
+                  '',
+                  '### 📁 生成ファイル',
+                  '- **index.html**: メインのお問い合わせフォーム',
+                  '- **README.md**: ドキュメント',
+                  '',
+                  '### 🚀 デプロイ後のアクセス方法',
+                  `**📱 フォームURL:** https://${context.repo.owner}.github.io/${context.repo.repo}/`,
+                  '',
+                  `Closes #${issueNumber}`
+                ].join('\n')
               });
 
               console.log(`✅ Pull Request #${pr.number} created`);
@@ -301,32 +246,36 @@ Closes #${issueNumber}
               }
 
               // 完了通知
+              const completionMessage = [
+                '## 🎉 お問い合わせフォーム デプロイ完了！',
+                '',
+                '**✅ 自動処理が完了しました:**',
+                '',
+                '### 🌐 アクセス方法',
+                `**📱 お問い合わせフォーム:** https://${context.repo.owner}.github.io/${context.repo.repo}/`,
+                '',
+                '### 📋 実装済み機能',
+                '- 📱 レスポンシブデザイン',
+                '- ✅ バリデーション機能',
+                '- 🎨 モダンUI/UX',
+                '- 📧 送信確認機能',
+                '',
+                '### ⚡ 処理詳細',
+                '1. Claude Sonnet 4でコード生成',
+                `2. プルリクエスト #${pr.number} 作成・マージ`,
+                '3. GitHub Pagesにデプロイ',
+                '',
+                '数分後にアクセス可能になります！',
+                '',
+                '---',
+                '*🤖 LINE Bot → Claude API → GitHub Actions による完全自動処理*'
+              ].join('\n');
+
               await github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `## 🎉 お問い合わせフォーム デプロイ完了！
-
-**✅ 自動処理が完了しました:**
-
-### 🌐 アクセス方法
-**📱 お問い合わせフォーム:** https://${context.repo.owner}.github.io/${context.repo.repo}/
-
-### 📋 実装済み機能
-- 📱 レスポンシブデザイン
-- ✅ バリデーション機能
-- 🎨 モダンUI/UX
-- 📧 送信確認機能
-
-### ⚡ 処理詳細
-1. Claude Sonnet 4でコード生成
-2. プルリクエスト #${pr.number} 作成・マージ
-3. GitHub Pagesにデプロイ
-
-数分後にアクセス可能になります！
-
----
-*🤖 LINE Bot → Claude API → GitHub Actions による完全自動処理*`
+                body: completionMessage
               });
 
               // Issue をクローズ
@@ -343,19 +292,23 @@ Closes #${issueNumber}
               console.log('❌ Error in PR/merge process:', error.message);
 
               // エラー時の通知
+              const errorMessage = [
+                '## ⚠️ 処理中にエラーが発生',
+                '',
+                'フォームは生成されましたが、マージ処理でエラーが発生しました。',
+                '手動でプルリクエストを確認してください。',
+                '',
+                `**エラー:** ${error.message}`,
+                '',
+                '---',
+                '*Claude Code Action*'
+              ].join('\n');
+
               await github.rest.issues.createComment({
                 issue_number: issueNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `## ⚠️ 処理中にエラーが発生
-
-フォームは生成されましたが、マージ処理でエラーが発生しました。
-手動でプルリクエストを確認してください。
-
-**エラー:** ${error.message}
-
----
-*Claude Code Action*`
+                body: errorMessage
               });
             }
 
