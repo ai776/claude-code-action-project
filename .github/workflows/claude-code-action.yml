@@ -64,36 +64,36 @@ jobs:
             const commentUser = context.payload.comment.user.login;
 
             // @claude指示の解析
-            let response = `## 🤖 Claude からの返答\n\n`;
-            response += `@${commentUser} さん、ご指示ありがとうございます！\n\n`;
+            let response = "## 🤖 Claude からの返答\n\n";
+            response += "@" + commentUser + " さん、ご指示ありがとうございます！\n\n";
 
             if (comment.includes('レビュー')) {
-              response += `### 📋 コードレビュー結果\n\n`;
-              response += `**現在のプロジェクト状況:**\n`;
-              response += `- ✅ 全テストが成功しています\n`;
-              response += `- ✅ 100% テストカバレッジを達成\n`;
-              response += `- ✅ エラーハンドリングが適切に実装されています\n\n`;
-              response += `**改善提案:**\n`;
-              response += `- 型安全性の向上（TypeScript導入検討）\n`;
-              response += `- より詳細なJSDocコメント\n`;
-              response += `- パフォーマンステストの追加\n\n`;
+              response += "### 📋 コードレビュー結果\n\n";
+              response += "**現在のプロジェクト状況:**\n";
+              response += "- ✅ 全テストが成功しています\n";
+              response += "- ✅ 100% テストカバレッジを達成\n";
+              response += "- ✅ エラーハンドリングが適切に実装されています\n\n";
+              response += "**改善提案:**\n";
+              response += "- 型安全性の向上（TypeScript導入検討）\n";
+              response += "- より詳細なJSDocコメント\n";
+              response += "- パフォーマンステストの追加\n\n";
             } else if (comment.includes('機能') || comment.includes('追加')) {
-              response += `### 🚀 機能追加の提案\n\n`;
-              response += `以下の機能追加を検討できます：\n`;
-              response += `- 三角関数（sin, cos, tan）\n`;
-              response += `- 対数計算（log, ln）\n`;
-              response += `- 累乗計算（power）\n`;
-              response += `- 階乗計算（factorial）\n\n`;
+              response += "### 🚀 機能追加の提案\n\n";
+              response += "以下の機能追加を検討できます：\n";
+              response += "- 三角関数（sin, cos, tan）\n";
+              response += "- 対数計算（log, ln）\n";
+              response += "- 累乗計算（power）\n";
+              response += "- 階乗計算（factorial）\n\n";
             } else {
-              response += `### 💡 一般的な分析\n\n`;
-              response += `現在のCalculatorクラスは以下の特徴があります：\n`;
-              response += `- シンプルで理解しやすい設計\n`;
-              response += `- 適切なエラーハンドリング\n`;
-              response += `- 包括的なテストカバレッジ\n`;
-              response += `- 拡張しやすいアーキテクチャ\n\n`;
+              response += "### 💡 一般的な分析\n\n";
+              response += "現在のCalculatorクラスは以下の特徴があります：\n";
+              response += "- シンプルで理解しやすい設計\n";
+              response += "- 適切なエラーハンドリング\n";
+              response += "- 包括的なテストカバレッジ\n";
+              response += "- 拡張しやすいアーキテクチャ\n\n";
             }
 
-            response += `---\n*この返答は GitHub Actions によって自動生成されました*`;
+            response += "---\n*この返答は GitHub Actions によって自動生成されました*";
 
             try {
               await github.rest.issues.createComment({
@@ -132,29 +132,24 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const changedFiles = `${{ steps.changed-files.outputs.files }}`.split('\n').filter(f => f.trim());
+            const changedFiles = "${{ steps.changed-files.outputs.files }}".split('\n').filter(f => f.trim());
 
-            const reviewComment = `## 🤖 自動コードレビュー
-
-### 📋 変更されたファイル
-${changedFiles.map(file => `- \`${file}\``).join('\n')}
-
-### ✅ チェック結果
-- **テスト**: すべてのテストが成功しました
-- **コード品質**: 問題は検出されませんでした
-- **カバレッジ**: 100% のテストカバレッジを達成
-
-### 📝 レビューコメント
-- 新機能が適切に実装されています
-- エラーハンドリングが正しく動作しています
-- テストケースが包括的です
-- コードの構造とテストの品質は良好です
-
-### 🎉 承認
-このプルリクエストは自動レビューを通過しました。マージの準備ができています！
-
----
-*このレビューは GitHub Actions によって自動生成されました*`;
+            const reviewComment = "## 🤖 自動コードレビュー\n\n" +
+              "### 📋 変更されたファイル\n" +
+              changedFiles.map(file => "- " + file).join('\n') + "\n\n" +
+              "### ✅ チェック結果\n" +
+              "- **テスト**: すべてのテストが成功しました\n" +
+              "- **コード品質**: 問題は検出されませんでした\n" +
+              "- **カバレッジ**: 100% のテストカバレッジを達成\n\n" +
+              "### 📝 レビューコメント\n" +
+              "- 新機能が適切に実装されています\n" +
+              "- エラーハンドリングが正しく動作しています\n" +
+              "- テストケースが包括的です\n" +
+              "- コードの構造とテストの品質は良好です\n\n" +
+              "### 🎉 承認\n" +
+              "このプルリクエストは自動レビューを通過しました。マージの準備ができています！\n\n" +
+              "---\n" +
+              "*このレビューは GitHub Actions によって自動生成されました*";
 
             try {
               await github.rest.issues.createComment({
