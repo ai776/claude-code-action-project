@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>お問い合わせフォーム</title>
+    <title>ポートフォリオ - AI776 Projects</title>
     <style>
         * {
             margin: 0;
@@ -12,23 +12,252 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* ヘッダー */
+        header {
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: #2563eb;
+        }
+
+        /* メインコンテンツ */
+        main {
+            margin-top: 80px;
+            padding: 60px 0;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            animation: slideUp 0.6s ease-out;
+            padding: 0 20px;
         }
 
-        @keyframes slideUp {
+        /* セクションタイトル */
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #2563eb;
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: #2563eb;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 50px;
+        }
+
+        /* カードグリッド */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        /* カード */
+        .card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-image.contact {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-image.github {
+            background: linear-gradient(135deg, #24292e 0%, #424242 100%);
+        }
+
+        .card-image.project {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077be 100%);
+        }
+
+        .card-image.blog {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        }
+
+        .card-image.about {
+            background: linear-gradient(135deg, #51cf66 0%, #3cb55c 100%);
+        }
+
+        .card-image.skills {
+            background: linear-gradient(135deg, #ffd93d 0%, #ffb03a 100%);
+        }
+
+        .card-content {
+            padding: 25px;
+        }
+
+        .card-date {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .card-tag {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card-tag.new {
+            background: #ef4444;
+        }
+
+        .card-tag.update {
+            background: #10b981;
+        }
+
+        .card-tag.info {
+            background: #6366f1;
+        }
+
+        /* フッター */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 80px;
+        }
+
+        footer p {
+            opacity: 0.8;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 0;
+            }
+
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            nav ul {
+                gap: 15px;
+                font-size: 0.9rem;
+            }
+
+            main {
+                margin-top: 120px;
+                padding: 40px 0;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .card-image {
+                height: 180px;
+            }
+        }
+
+        /* アニメーション */
+        @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -39,441 +268,162 @@
             }
         }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
+        .card {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
         }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+        .card:nth-child(6) { animation-delay: 0.6s; }
 
-        .header p {
-            font-size: 1.1rem;
+        /* アイコン */
+        .icon {
+            font-size: 4rem;
             opacity: 0.9;
-        }
-
-        .form-container {
-            padding: 40px 30px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 0.95rem;
-        }
-
-        .required {
-            color: #e74c3c;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-control.error {
-            border-color: #e74c3c;
-            background: #fdf2f2;
-        }
-
-        .form-control.success {
-            border-color: #27ae60;
-            background: #f2fdf5;
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        .error-message {
-            color: #e74c3c;
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .loading {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #c3e6cb;
-            display: none;
-            animation: slideDown 0.5s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .char-count {
-            font-size: 0.8rem;
-            color: #666;
-            text-align: right;
-            margin-top: 5px;
-        }
-
-        /* レスポンシブデザイン */
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .header {
-                padding: 30px 20px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .form-container {
-                padding: 30px 20px;
-            }
-
-            .form-control {
-                padding: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .header p {
-                font-size: 1rem;
-            }
-
-            .form-container {
-                padding: 25px 15px;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>お問い合わせ</h1>
-            <p>ご質問やご相談がございましたら、お気軽にお問い合わせください</p>
+    <!-- ヘッダー -->
+    <header>
+        <div class="header-container">
+            <div class="logo">AI776 Portfolio</div>
+            <nav>
+                <ul>
+                    <li><a href="#projects">プロジェクト</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="contact.html">お問い合わせ</a></li>
+                </ul>
+            </nav>
         </div>
-        
-        <div class="form-container">
-            <div class="success-message" id="successMessage">
-                お問い合わせありがとうございます。内容を確認次第、ご連絡いたします。
-            </div>
-            
-            <form id="contactForm" novalidate>
-                <div class="form-group">
-                    <label for="name">お名前 <span class="required">*</span></label>
-                    <input type="text" id="name" name="name" class="form-control" required>
-                    <div class="error-message" id="nameError"></div>
-                </div>
+    </header>
 
-                <div class="form-group">
-                    <label for="email">メールアドレス <span class="required">*</span></label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-                    <div class="error-message" id="emailError"></div>
-                </div>
+    <!-- メインコンテンツ -->
+    <main>
+        <div class="container">
+            <!-- プロジェクトセクション -->
+            <section id="projects">
+                <h2 class="section-title">プロジェクト</h2>
+                <p class="section-subtitle">最新のプロジェクトと更新情報</p>
 
-                <div class="form-group">
-                    <label for="phone">電話番号</label>
-                    <input type="tel" id="phone" name="phone" class="form-control">
-                    <div class="error-message" id="phoneError"></div>
-                </div>
+                <div class="cards-grid">
+                    <!-- お問い合わせフォーム -->
+                    <a href="contact.html" class="card" style="text-decoration: none;">
+                        <div class="card-image contact">
+                            <span class="icon">📧</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/29</div>
+                            <h3 class="card-title">お問い合わせフォーム</h3>
+                            <p class="card-description">Claude APIによって自動生成された美しいお問い合わせフォーム。バリデーション機能付き。</p>
+                            <span class="card-tag new">NEW</span>
+                        </div>
+                    </a>
 
-                <div class="form-group">
-                    <label for="subject">件名 <span class="required">*</span></label>
-                    <input type="text" id="subject" name="subject" class="form-control" required>
-                    <div class="error-message" id="subjectError"></div>
-                </div>
+                    <!-- GitHubプロジェクト -->
+                    <a href="https://github.com/ai776/claude-code-action-project" class="card" style="text-decoration: none;" target="_blank">
+                        <div class="card-image github">
+                            <span class="icon">🚀</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/28</div>
+                            <h3 class="card-title">Claude Code Action Project</h3>
+                            <p class="card-description">GitHub ActionsとClaude APIを統合した自動コード生成システム。LINE Bot連携も実装。</p>
+                            <span class="card-tag">GitHub</span>
+                        </div>
+                    </a>
 
-                <div class="form-group">
-                    <label for="message">お問い合わせ内容 <span class="required">*</span></label>
-                    <textarea id="message" name="message" class="form-control" required maxlength="1000"></textarea>
-                    <div class="char-count">
-                        <span id="charCount">0</span>/1000文字
+                    <!-- Calculatorプロジェクト -->
+                    <div class="card">
+                        <div class="card-image project">
+                            <span class="icon">🧮</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/27</div>
+                            <h3 class="card-title">Calculator with TDD</h3>
+                            <p class="card-description">テスト駆動開発で実装した計算機。Jest使用、100%のテストカバレッジ達成。</p>
+                            <span class="card-tag update">UPDATE</span>
+                        </div>
                     </div>
-                    <div class="error-message" id="messageError"></div>
-                </div>
 
-                <button type="submit" class="submit-btn" id="submitBtn">
-                    <span id="btnText">送信する</span>
-                    <div class="loading" id="loading">
-                        <div class="spinner"></div>
+                    <!-- Playwrightプロジェクト -->
+                    <div class="card">
+                        <div class="card-image skills">
+                            <span class="icon">🎭</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/26</div>
+                            <h3 class="card-title">Playwright MCP Server</h3>
+                            <p class="card-description">ブラウザ自動化のためのMCPサーバー実装。E2Eテストの自動化に対応。</p>
+                            <span class="card-tag">技術</span>
+                        </div>
                     </div>
-                </button>
-            </form>
+
+                    <!-- ブログ -->
+                    <div class="card">
+                        <div class="card-image blog">
+                            <span class="icon">📝</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/25</div>
+                            <h3 class="card-title">技術ブログ</h3>
+                            <p class="card-description">最新の技術トレンドや開発のTipsを共有。CI/CD、テスト自動化などの記事を投稿予定。</p>
+                            <span class="card-tag info">準備中</span>
+                        </div>
+                    </div>
+
+                    <!-- About -->
+                    <div class="card">
+                        <div class="card-image about">
+                            <span class="icon">👨‍💻</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-date">2025/05/24</div>
+                            <h3 class="card-title">プロフィール</h3>
+                            <p class="card-description">フルスタック開発者として、AI統合システムの構築に情熱を注いでいます。</p>
+                            <span class="card-tag">About</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-    </div>
+    </main>
+
+    <!-- フッター -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 AI776 Portfolio. Built with Claude Code Action.</p>
+        </div>
+    </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('contactForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const loading = document.getElementById('loading');
-            const successMessage = document.getElementById('successMessage');
-            const messageTextarea = document.getElementById('message');
-            const charCount = document.getElementById('charCount');
-
-            // 文字数カウント
-            messageTextarea.addEventListener('input', function() {
-                const count = this.value.length;
-                charCount.textContent = count;
-                
-                if (count > 1000) {
-                    charCount.style.color = '#e74c3c';
-                } else {
-                    charCount.style.color = '#666';
-                }
-            });
-
-            // リアルタイムバリデーション
-            const inputs = form.querySelectorAll('.form-control');
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    validateField(this);
-                });
-
-                input.addEventListener('input', function() {
-                    if (this.classList.contains('error')) {
-                        validateField(this);
-                    }
-                });
-            });
-
-            // フォーム送信
-            form.addEventListener('submit', function(e) {
+        // スムーススクロール
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
                 e.preventDefault();
-                
-                if (validateForm()) {
-                    submitForm();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
                 }
             });
+        });
 
-            function validateField(field) {
-                const fieldName = field.name;
-                const value = field.value.trim();
-                let isValid = true;
-                let errorMessage = '';
-
-                // 必須チェック
-                if (field.hasAttribute('required') && !value) {
-                    isValid = false;
-                    errorMessage = 'この項目は必須です';
-                }
-
-                // 個別バリデーション
-                if (value) {
-                    switch (fieldName) {
-                        case 'name':
-                            if (value.length < 2) {
-                                isValid = false;
-                                errorMessage = 'お名前は2文字以上で入力してください';
-                            }
-                            break;
-
-                        case 'email':
-                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                            if (!emailRegex.test(value)) {
-                                isValid = false;
-                                errorMessage = '正しいメールアドレスを入力してください';
-                            }
-                            break;
-
-                        case 'phone':
-                            if (value) {
-                                const phoneRegex = /^[\d\-\(\)\+\s]+$/;
-                                if (!phoneRegex.test(value)) {
-                                    isValid = false;
-                                    errorMessage = '正しい電話番号を入力してください';
-                                }
-                            }
-                            break;
-
-                        case 'subject':
-                            if (value.length < 3) {
-                                isValid = false;
-                                errorMessage = '件名は3文字以上で入力してください';
-                            }
-                            break;
-
-                        case 'message':
-                            if (value.length < 10) {
-                                isValid = false;
-                                errorMessage = 'お問い合わせ内容は10文字以上で入力してください';
-                            } else if (value.length > 1000) {
-                                isValid = false;
-                                errorMessage = 'お問い合わせ内容は1000文字以内で入力してください';
-                            }
-                            break;
-                    }
-                }
-
-                showFieldError(field, errorMessage, isValid);
-                return isValid;
-            }
-
-            function showFieldError(field, message, isValid) {
-                const errorElement = document.getElementById(field.name + 'Error');
-                
-                if (isValid) {
-                    field.classList.remove('error');
-                    field.classList.add('success');
-                    errorElement.style.display = 'none';
-                } else {
-                    field.classList.remove('success');
-                    field.classList.add('error');
-                    errorElement.textContent = message;
-                    errorElement.style.display = 'block';
-                }
-            }
-
-            function validateForm() {
-                let isFormValid = true;
-                
-                inputs.forEach(input => {
-                    if (!validateField(input)) {
-                        isFormValid = false;
-                    }
-                });
-
-                return isFormValid;
-            }
-
-            function submitForm() {
-                // ローディング状態に変更
-                submitBtn.disabled = true;
-                btnText.style.opacity = '0';
-                loading.style.display = 'block';
-
-                // 実際の送信処理をシミュレート（2秒後に完了）
-                setTimeout(() => {
-                    // 成功メッセージを表示
-                    successMessage.style.display = 'block';
-                    
-                    // フォームをリセット
-                    form.reset();
-                    charCount.textContent = '0';
-                    
-                    // 全てのフィールドのスタイルをリセット
-                    inputs.forEach(input => {
-                        input.classList.remove('error', 'success');
-                    });
-                    
-                    // エラーメッセージを非表示
-                    const errorMessages = form.querySelectorAll('.error-message');
-                    errorMessages.forEach(error => {
-                        error.style.display = 'none';
-                    });
-
-                    // ボタンを元に戻す
-                    submitBtn.disabled = false;
-                    btnText.style.opacity = '1';
-                    loading.style.display = 'none';
-
-                    // 成功メッセージを5秒後に非表示
+        // カードクリック時のアニメーション
+        document.querySelectorAll('.card').forEach(card => {
+            if (!card.hasAttribute('href')) {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
                     setTimeout(() => {
-                        successMessage.style.display = 'none';
-                    }, 5000);
-
-                }, 2000);
+                        this.style.transform = '';
+                    }, 200);
+                });
             }
         });
     </script>
